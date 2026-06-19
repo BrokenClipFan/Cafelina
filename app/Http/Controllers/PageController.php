@@ -1,15 +1,35 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Models\PageController;
+use App\Models\Category;
+use App\Models\Item;
 use Illuminate\Http\Request;
 
-class PageControllerController extends Controller
+class PageController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    public function editOrder()
+    {
+        $categories = Category::orderBy('position', 'asc')->get();
+        
+        if ($categories->isEmpty()) {
+            dd('here');
+            return view('editOrder', [
+                'categories' => collect(),
+                'items' => collect(),
+                'firstCategory' => null
+            ]);
+        }
+
+        $firstCategory = $categories->shift();
+
+        $items = Item::orderBy('position', 'asc')->get();
+
+        return view('editOrder', compact('categories', 'items', 'firstCategory'));
+    }
+
     public function index()
     {
         //

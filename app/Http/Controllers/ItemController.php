@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
@@ -28,22 +29,30 @@ class ItemController extends Controller
      */
     public function store(Request $request)
     {
+        // fallback first
+        if (!$request->category) {
+            $request->merge([
+                'category' => Category::orderBy('position', 'asc')->value('category')
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|regex:/^\d+(\.\d{1,2})?$/',
+            'price' => 'required|numeric|min:0',
         ]);
 
         $lastPosition = Item::max('position') ?? 0;
-
+        dd(
         Item::create([
-            'name' => $validated['name'],
-            'category' => $validated['category'],
+            'name' => ucwords(strtolower($validated['name'])),
+            'category' => ucwords(strtolower($validated['category'])),
             'price' => $validated['price'],
             'position' => $lastPosition + 1
-        ]);
+        ])
+        );
 
-        return redirect()->back()->with('success', 'Item is saved');
+        return back()->with('success', 'Item saved');
     }
 
     /**

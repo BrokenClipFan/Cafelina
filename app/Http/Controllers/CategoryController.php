@@ -35,7 +35,7 @@ class CategoryController extends Controller
         $lastPosition = Category::max('position') ?? 0;
 
         Category::create([
-            'category' => $validated['category'],
+            'category' => ucwords(strtolower($validated['category'])),
             'icon' => $validated['icon'],
             'position' => $lastPosition + 1,
         ]);

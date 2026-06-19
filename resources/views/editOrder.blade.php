@@ -7,7 +7,7 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
+    
     <style>
         /* Custom Cafelina Theme */
         :root {
@@ -220,20 +220,30 @@
 
                     <div class="category-scroll mb-4 pt-4 d-flex gap-2" id="categorySortable">
                         
-                        <div class="category-wrapper" data-id="cat-1">
-                            <button data-category="coffee" class="categoryButton btn btn-theme btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Coffee</button>
-                            <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
-                        </div>
+                        @if($firstCategory)
+                            <div class="category-wrapper" data-category="{{ $firstCategory->category }}">
+                                <button
+                                    data-category="{{ $firstCategory->category }}"
+                                    class="categoryButton btn btn-theme btn-outline-theme px-4 py-2 rounded-pill">
 
-                        <div class="category-wrapper" data-id="cat-2">
-                            <button data-category="Tea" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Tea</button>
-                            <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
-                        </div>
+                                    <i class="bi {{ $firstCategory->icon }} me-1 opacity-50"></i>
+                                    {{ $firstCategory->category }}
 
-                        <div class="category-wrapper" data-id="cat-3">
-                            <button data-category="Pastries" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Pastries</button>
+                                </button>
+
+                                <div class="delete-cat-badge">
+                                    <i class="bi bi-x"></i>
+                                </div>
+                            </div>
+                        @endif
+
+                        @foreach($categories as $category)
+                        <div class="category-wrapper" data-category="{{$category->category}}">
+                            
+                            <button data-category="{{$category->category}}" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi {{ $category->icon }} me-1 opacity-50"></i>{{ $category->category }}</button>
                             <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
                         </div>
+                        @endforeach
 
                         <button class="btn btn-light text-primary border-dashed px-3 py-2 rounded-pill fw-bold" 
                               style="border: 2px dashed var(--theme-primary);"
@@ -244,46 +254,38 @@
 
                     </div>
 
+                    @php
+                        $firstCategory = $firstCategory->category ?? null;
+                    @endphp
+
                     <div class="row g-3 overflow-auto flex-grow-1 align-content-start" id="itemSortable">
-                        
-                        <div class="col-md-4 col-sm-6" data-id="item-1">
-                            <div class="card item-card h-100 p-3">
-                                <h6 class="fw-bold mb-1">Espresso</h6>
-                                <p class="text-muted small mb-3">Coffee</p>
-                                <div class="mt-auto fw-bold text-primary" style="color: var(--theme-primary) !important;">$3.50</div>
-                                
-                                <div class="item-actions shadow-sm">
-                                    <button class="btn btn-sm btn-primary rounded-circle"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-danger rounded-circle"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="col-md-4 col-sm-6" data-id="item-2">
-                            <div class="card item-card h-100 p-3">
-                                <h6 class="fw-bold mb-1">Americano</h6>
-                                <p class="text-muted small mb-3">Coffee</p>
-                                <div class="mt-auto fw-bold text-primary" style="color: var(--theme-primary) !important;">$4.00</div>
-                                
-                                <div class="item-actions shadow-sm">
-                                    <button class="btn btn-sm btn-primary rounded-circle"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-danger rounded-circle"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                        </div>
+                    @foreach($items as $item)
+                        <div class="col-md-4 col-sm-6 categoryItems
+                            {{ $item->category !== $firstCategory ? 'd-none' : '' }}"
+                            data-id="item-1"
+                            data-category="{{ $item->category }}">
 
-                        <div class="col-md-4 col-sm-6" data-id="item-3">
                             <div class="card item-card h-100 p-3">
-                                <h6 class="fw-bold mb-1">Latte</h6>
+                                <h6 class="fw-bold mb-1">{{ $item->name }}</h6>
                                 <p class="text-muted small mb-3">Coffee</p>
-                                <div class="mt-auto fw-bold text-primary" style="color: var(--theme-primary) !important;">$4.75</div>
-                                
+
+                                <div class="mt-auto fw-bold text-primary"
+                                    style="color: var(--theme-primary) !important;">
+                                    $3.50
+                                </div>
+
                                 <div class="item-actions shadow-sm">
-                                    <button class="btn btn-sm btn-primary rounded-circle"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-danger rounded-circle"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-primary rounded-circle">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger rounded-circle">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    @endforeach
 
                         <div class="col-md-4 col-sm-6 ignore-drag" 
                           data-bs-toggle="modal" 
@@ -333,7 +335,6 @@
             <div class="col-lg-3 col-md-6 h-100">
                 <div class="pos-panel preview-panel d-flex flex-column" style="background-color: var(--theme-accent-light);">
                     <div class="preview-badge"><i class="bi bi-eye me-1"></i>Preview</div>
-                    
                     <h5 class="fw-bold mb-3 mt-2">Active Kitchen Orders</h5>
                     <div class="flex-grow-1">
                         <div class="card mb-3 border-0 shadow-sm">
@@ -348,7 +349,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -394,6 +394,7 @@
           </div>
       </div>
   </div>
+  
   <!-- Add Item Modal -->
   <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -409,11 +410,10 @@
               <form id="itemForm" action="{{ route('item.store')}}" method="POST">
                 @csrf
                 <input type="hidden" name="category" id="categoryInput" placeholder="A man who cant be moved">
-
                 <!-- Item Name -->
                 <div class="mb-4">
                     <label for="itemName" class="form-label fw-bold small text-uppercase">Item Name</label>
-                    <input type="text" data-category="Null" name="name" class="form-control border-0 shadow-sm p-2" id="itemName" placeholder="e.g. Caramel Macchiato" required>
+                    <input type="text" name="name" class="form-control border-0 shadow-sm p-2" id="itemName" placeholder="e.g. Caramel Macchiato" required>
                 </div>
                 <!-- Price Input -->
                 <div class="mb-3">
@@ -478,11 +478,8 @@
         });
     });
     document.addEventListener('DOMContentLoaded', function() {
-        // Select all icon options and the hidden input
         const categories = document.querySelectorAll('.categoryButton');
         const selectedCategoryInput = document.getElementById('categoryInput');
-
-        // Loop through each icon option and attach a click event
         categories.forEach(option => {
             option.addEventListener('click', function() {
                 // 1. Remove the 'active' class from ALL options
@@ -492,11 +489,32 @@
                 this.classList.add('btn-theme');
                 
                 // 3. Grab the data-icon value and assign it to the hidden input
-                const selectedCategory = this.getAttribute('data-category');
+                const selectedCategory = this.dataset.category;
                 selectedCategoryInput.value = selectedCategory;
             });
         });
     });
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".categoryButton");
+    const items = document.querySelectorAll("#itemSortable [data-category]");
+
+    buttons.forEach(btn => {
+        btn.addEventListener("click", function () {
+            const selectedCategory = this.dataset.category;
+
+            items.forEach(item => {
+                const itemCategory = item.dataset.category;
+
+                if (selectedCategory === "all" || itemCategory === selectedCategory) {
+                    item.classList.remove("d-none");
+                } else {
+                    item.classList.add("d-none");
+                }
+            });
+        });
+    });
+});
 </script>
 
 </body>
