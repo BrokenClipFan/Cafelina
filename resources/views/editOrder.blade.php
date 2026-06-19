@@ -66,7 +66,7 @@
         /* Custom Buttons */
         .btn-theme {
             background-color: var(--theme-primary);
-            color: #fff;
+            color: #fff !important;
             border: none;
         }
         .btn-theme:hover { background-color: var(--theme-dark); color: #fff; }
@@ -218,20 +218,20 @@
                         </div>
                     </div>
 
-                    <div class="category-scroll mb-4 d-flex gap-2" id="categorySortable">
+                    <div class="category-scroll mb-4 pt-4 d-flex gap-2" id="categorySortable">
                         
                         <div class="category-wrapper" data-id="cat-1">
-                            <button class="btn btn-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Coffee</button>
+                            <button data-category="coffee" class="categoryButton btn btn-theme btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Coffee</button>
                             <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
                         </div>
 
                         <div class="category-wrapper" data-id="cat-2">
-                            <button class="btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Tea</button>
+                            <button data-category="Tea" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Tea</button>
                             <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
                         </div>
 
                         <div class="category-wrapper" data-id="cat-3">
-                            <button class="btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Pastries</button>
+                            <button data-category="Pastries" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi bi-grip-vertical me-1 opacity-50"></i>Pastries</button>
                             <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
                         </div>
 
@@ -359,83 +359,77 @@
                   <h5 class="modal-title fw-bold" id="addCategoryModalLabel">Create New Category</h5>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              <div class="modal-body p-4" style="background-color: #fffaf1;">
-                  <form id="categoryForm">
-                      <div class="mb-4">
-                          <label for="categoryName" class="form-label fw-bold small text-uppercase">Category Name</label>
-                          <input type="text" class="form-control border-0 shadow-sm" id="categoryName" placeholder="e.g. Signature Coffee" required>
-                      </div>
 
-                      <div class="mb-3">
-                          <label class="form-label fw-bold small text-uppercase">Select Icon</label>
-                          <input type="hidden" id="selectedIcon" value="bi-cup-hot"> <div class="d-flex flex-wrap gap-2 p-3 bg-white rounded shadow-sm border" id="iconPicker">
-                              <div class="icon-option active" data-icon="bi-cup-hot"><i class="bi bi-cup-hot"></i></div>
-                              <div class="icon-option" data-icon="bi-cup"><i class="bi bi-cup"></i></div>
-                              <div class="icon-option" data-icon="bi-droplet-half"><i class="bi bi-droplet-half"></i></div>
-                              <div class="icon-option" data-icon="bi-snow"><i class="bi bi-snow"></i></div>
-                              <div class="icon-option" data-icon="bi-cake2"><i class="bi bi-cake2"></i></div>
-                              <div class="icon-option" data-icon="bi-baguette"><i class="bi bi-baguette"></i></div>
-                              <div class="icon-option" data-icon="bi-egg-fried"><i class="bi bi-egg-fried"></i></div>
-                              <div class="icon-option" data-icon="bi-pie-chart"><i class="bi bi-pie-chart"></i></div>
-                              <div class="icon-option" data-icon="bi-brightness-high"><i class="bi bi-brightness-high"></i></div>
-                              <div class="icon-option" data-icon="bi-moon-stars"><i class="bi bi-moon-stars"></i></div>
-                          </div>
+              {{-- Add Category --}}
+              <div class="modal-body p-4" style="background-color: #fffaf1;">
+                  <form id="categoryForm" action="{{ route('category.store') }}" method="POST">
+                    @csrf
+                    <div class="mb-4">
+                        <label for="categoryName" class="form-label fw-bold small text-uppercase">Category Name</label>
+                        <input type="text" name="category" class="form-control border-0 shadow-sm" id="categoryName" placeholder="e.g. Signature Coffee" required>
+                    </div>
+
+                    <div class="mb-3">
+                      <input type="hidden" name="icon" id="selectedIcon" value="bi-cup-hot">
+                      <label class="form-label fw-bold small text-uppercase">Select Icon</label>
+                      <div class="d-flex flex-wrap gap-2 p-3 bg-white rounded shadow-sm border" id="iconPicker">
+                          <div class="icon-option active" data-icon="bi-cup-hot"><i class="bi bi-cup-hot"></i></div>
+                          <div class="icon-option" data-icon="bi-cup"><i class="bi bi-cup"></i></div>
+                          <div class="icon-option" data-icon="bi-droplet-half"><i class="bi bi-droplet-half"></i></div>
+                          <div class="icon-option" data-icon="bi-snow"><i class="bi bi-snow"></i></div>
+                          <div class="icon-option" data-icon="bi-cake2"><i class="bi bi-cake2"></i></div>
+                          <div class="icon-option" data-icon="bi-baguette"><i class="bi bi-baguette"></i></div>
+                          <div class="icon-option" data-icon="bi-egg-fried"><i class="bi bi-egg-fried"></i></div>
+                          <div class="icon-option" data-icon="bi-pie-chart"><i class="bi bi-pie-chart"></i></div>
+                          <div class="icon-option" data-icon="bi-brightness-high"><i class="bi bi-brightness-high"></i></div>
+                          <div class="icon-option" data-icon="bi-moon-stars"><i class="bi bi-moon-stars"></i></div>
                       </div>
-                  </form>
-              </div>
-              <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
-                  <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" form="categoryForm" class="btn btn-theme px-4 py-2 fw-bold">Create Category</button>
-              </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
+                      <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" form="categoryForm" class="btn btn-theme px-4 py-2 fw-bold">Create Category</button>
+                  </div>
+                </form>
           </div>
       </div>
   </div>
   <!-- Add Item Modal -->
   <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content border-0 shadow">
-              
-              <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
-                  <h5 class="modal-title fw-bold" id="addItemModalLabel">Create New Menu Item</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              
-              <div class="modal-body p-4" style="background-color: #fffaf1;">
-                  <form id="itemForm">
-                      <!-- Item Name -->
-                      <div class="mb-4">
-                          <label for="itemName" class="form-label fw-bold small text-uppercase">Item Name</label>
-                          <input type="text" class="form-control border-0 shadow-sm p-2" id="itemName" placeholder="e.g. Caramel Macchiato" required>
-                      </div>
+        <div class="modal-content border-0 shadow">
+            
+            <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title fw-bold" id="addItemModalLabel">Create New Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4" style="background-color: #fffaf1;">
+              {{-- Save Item --}}
+              <form id="itemForm" action="{{ route('item.store')}}" method="POST">
+                @csrf
+                <input type="hidden" name="category" id="categoryInput" placeholder="A man who cant be moved">
 
-                      <!-- Category Selection -->
-                      <div class="mb-4">
-                          <label for="itemCategory" class="form-label fw-bold small text-uppercase">Category</label>
-                          <select class="form-select border-0 shadow-sm p-2" id="itemCategory" required>
-                              <option value="" disabled selected>Select a category...</option>
-                              <option value="coffee">Coffee</option>
-                              <option value="tea">Tea</option>
-                              <option value="pastries">Pastries</option>
-                          </select>
-                      </div>
-
-                      <!-- Price Input -->
-                      <div class="mb-3">
-                          <label for="itemPrice" class="form-label fw-bold small text-uppercase">Price</label>
-                          <div class="input-group shadow-sm border-0 rounded">
-                              <span class="input-group-text bg-white border-0 text-muted fw-bold">$</span>
-                              <input type="number" class="form-control border-0" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
-                          </div>
-                      </div>
-                  </form>
-              </div>
-              
-              <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
-                  <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" form="itemForm" class="btn btn-theme px-4 py-2 fw-bold">Save Item</button>
-              </div>
-
-          </div>
+                <!-- Item Name -->
+                <div class="mb-4">
+                    <label for="itemName" class="form-label fw-bold small text-uppercase">Item Name</label>
+                    <input type="text" data-category="Null" name="name" class="form-control border-0 shadow-sm p-2" id="itemName" placeholder="e.g. Caramel Macchiato" required>
+                </div>
+                <!-- Price Input -->
+                <div class="mb-3">
+                    <label for="itemPrice" class="form-label fw-bold small text-uppercase">Price</label>
+                    <div class="input-group shadow-sm border-0 rounded">
+                        <span class="input-group-text bg-white border-0 text-muted fw-bold">$</span>
+                        <input name="price" type="number" class="form-control border-0" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="itemForm" class="btn btn-theme px-4 py-2 fw-bold">Save Item</button>
+                </div>
+              </form>
+            </div>
+        </div>
       </div>
   </div>
 
@@ -462,6 +456,48 @@
             }
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all icon options and the hidden input
+        const iconOptions = document.querySelectorAll('.icon-option');
+        const selectedIconInput = document.getElementById('selectedIcon');
+
+        // Loop through each icon option and attach a click event
+        iconOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // 1. Remove the 'active' class from ALL options
+                iconOptions.forEach(opt => opt.classList.remove('active'));
+                
+                // 2. Add the 'active' class to the clicked option
+                this.classList.add('active');
+                
+                // 3. Grab the data-icon value and assign it to the hidden input
+                const chosenIcon = this.getAttribute('data-icon');
+                selectedIconInput.value = chosenIcon;
+            });
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all icon options and the hidden input
+        const categories = document.querySelectorAll('.categoryButton');
+        const selectedCategoryInput = document.getElementById('categoryInput');
+
+        // Loop through each icon option and attach a click event
+        categories.forEach(option => {
+            option.addEventListener('click', function() {
+                // 1. Remove the 'active' class from ALL options
+                categories.forEach(opt => opt.classList.remove('btn-theme'));
+                
+                // 2. Add the 'active' class to the clicked option
+                this.classList.add('btn-theme');
+                
+                // 3. Grab the data-icon value and assign it to the hidden input
+                const selectedCategory = this.getAttribute('data-category');
+                selectedCategoryInput.value = selectedCategory;
+            });
+        });
+    });
+</script>
 
 </body>
 </html>
