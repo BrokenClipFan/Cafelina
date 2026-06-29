@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Cafelina - Live Menu Editor</title>
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
-    <style>
+
+<style>
         /* Custom Cafelina Theme */
         :root {
             --theme-bg: #FFEAC5;
@@ -199,10 +200,9 @@
 
     <div class="editor-header p-3 d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center">
-            <button class="btn btn-outline-secondary me-3 btn-sm" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</button>
+            <a href="{{ route('/') }}" class="btn btn-outline-secondary me-3 btn-sm" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
             <h5 class="mb-0 fw-bold" style="color: var(--theme-primary);"><i class="bi bi-magic me-2"></i>Live Menu Editor</h5>
         </div>
-        <button class="btn btn-success fw-bold px-4"><i class="bi bi-check2-all me-2"></i>Publish Changes</button>
     </div>
 
     <div class="container-fluid flex-grow-1 px-3 pb-3">
@@ -221,7 +221,7 @@
                     <div class="category-scroll mb-4 pt-4 d-flex gap-2" id="categorySortable">
                         
                         @if($firstCategory)
-                            <div class="category-wrapper" data-category="{{ $firstCategory->category }}">
+                            <div class="category-wrapper" data-category="{{ $firstCategory->category }}" data-id="{{ $firstCategory->id }}">
                                 <button
                                     data-category="{{ $firstCategory->category }}"
                                     class="categoryButton btn btn-theme btn-outline-theme px-4 py-2 rounded-pill">
@@ -231,17 +231,17 @@
 
                                 </button>
 
-                                <div class="delete-cat-badge">
+                                <div class="delete-cat-badge delete-category-btn">
                                     <i class="bi bi-x"></i>
                                 </div>
                             </div>
                         @endif
 
                         @foreach($categories as $category)
-                        <div class="category-wrapper" data-category="{{$category->category}}">
+                        <div class="category-wrapper" data-category="{{$category->category}}" data-id="{{ $category->id }}">
                             
-                            <button data-category="{{$category->category}}" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi {{ $category->icon }} me-1 opacity-50"></i>{{ $category->category }}</button>
-                            <div class="delete-cat-badge"><i class="bi bi-x"></i></div>
+                            <button data-category="{{$category->category}}" data-id="{{ $category->id }}" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi {{ $category->icon }} me-1 opacity-50"></i>{{ $category->category }}</button>
+                            <div class="delete-cat-badge delete-category-btn"><i class="bi bi-x"></i></div>
                         </div>
                         @endforeach
 
@@ -263,23 +263,25 @@
                     @foreach($items as $item)
                         <div class="col-md-4 col-sm-6 categoryItems
                             {{ $item->category !== $firstCategory ? 'd-none' : '' }}"
-                            data-id="item-1"
+                            data-id="{{ $item->id }}"
                             data-category="{{ $item->category }}">
 
                             <div class="card item-card h-100 p-3">
-                                <h6 class="fw-bold mb-1">{{ $item->name }}</h6>
+                                <h6 class="fw-bold mb-1" id="itemChangedName">{{ $item->name }}</h6>
                                 <p class="text-muted small mb-3">Coffee</p>
 
-                                <div class="mt-auto fw-bold text-primary"
+                                <div class="mt-auto fw-bold text-primary" id="itemChangedPrice"
                                     style="color: var(--theme-primary) !important;">
-                                    $3.50
+                                    ₱{{ $item->price }}
                                 </div>
-
+                                
                                 <div class="item-actions shadow-sm">
-                                    <button class="btn btn-sm btn-primary rounded-circle">
+                                    <!-- Added 'edit-item-btn' here -->
+                                    <button class="btn btn-sm btn-primary rounded-circle edit-item-btn">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-danger rounded-circle">
+                                    <!-- We'll add 'delete-item-btn' here early for later -->
+                                    <button class="btn btn-sm btn-danger rounded-circle delete-item-btn">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -318,14 +320,14 @@
                             <h6 class="mb-0">Latte</h6>
                             <div class="d-flex justify-content-between text-muted small mt-1">
                                 <span>1x</span>
-                                <span>$4.75</span>
+                                <span>₱4.75</span>
                             </div>
                         </div>
                     </div>
                     <div class="border-top pt-3 mt-2">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="mb-0">Total</h5>
-                            <h4 class="mb-0 fw-bold" style="color: var(--theme-primary);">$4.75</h4>
+                            <h4 class="mb-0 fw-bold" style="color: var(--theme-primary);">₱4.75</h4>
                         </div>
                         <button class="btn btn-secondary w-100 py-3 fw-bold fs-6 opacity-50" disabled>Complete Order</button>
                     </div>
@@ -409,7 +411,7 @@
               {{-- Save Item --}}
               <form id="itemForm" action="{{ route('item.store')}}" method="POST">
                 @csrf
-                <input type="hidden" name="category" id="categoryInput" placeholder="A man who cant be moved">
+                <input type="hidden" name="category" id="categoryInput" value="{{ $firstCategory }}">
                 <!-- Item Name -->
                 <div class="mb-4">
                     <label for="itemName" class="form-label fw-bold small text-uppercase">Item Name</label>
@@ -419,7 +421,7 @@
                 <div class="mb-3">
                     <label for="itemPrice" class="form-label fw-bold small text-uppercase">Price</label>
                     <div class="input-group shadow-sm border-0 rounded">
-                        <span class="input-group-text bg-white border-0 text-muted fw-bold">$</span>
+                        <span class="input-group-text bg-white border-0 text-muted fw-bold">₱</span>
                         <input name="price" type="number" class="form-control border-0" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                 </div>
@@ -432,29 +434,345 @@
         </div>
       </div>
   </div>
+  <!-- Edit Item Modal -->
+    <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            
+            <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title fw-bold" id="editItemModalLabel">Edit Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4" style="background-color: #fffaf1;">
+                <form id="editItemForm">
+                <!-- Hidden input to store the item ID being edited -->
+                <input type="hidden" name="id" id="editItemId">
+                
+                <div class="mb-4">
+                    <label for="editItemName" class="form-label fw-bold small text-uppercase">Item Name</label>
+                    <input type="text" name="name" class="form-control border-0 shadow-sm p-2" id="editItemName" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="editItemPrice" class="form-label fw-bold small text-uppercase">Price</label>
+                    <div class="input-group shadow-sm border-0 rounded">
+                        <span class="input-group-text bg-white border-0 text-muted fw-bold">₱</span>
+                        <input name="price" type="number" class="form-control border-0" id="editItemPrice" step="0.01" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-theme px-4 py-2 fw-bold">Update Item</button>
+                </div>
+                </form>
+            </div>
+        </div>
+        </div>
+    </div>
+    <div class="modal fade" id="deleteItemModal" tabindex="-1" aria-labelledby="deleteItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold" id="deleteItemModalLabel">Delete Item</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p>Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
+                    <form id="deleteItemForm">
+                        <input type="hidden" name="id" id="deleteItemId">
+                    </form>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="deleteItemForm" class="btn btn-danger px-4 py-2 fw-bold">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{-- delete category --}}
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold" id="deleteCategoryModalLabel">
+                        Delete Category
+                    </h5>
+
+                    <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <p>
+                        Are you sure you want to delete
+                        <strong id="deleteCategoryName"></strong>?
+                        This action cannot be undone.
+                    </p>
+
+                    <form id="deleteCategoryForm">
+                        <input type="hidden" name="id" id="deleteCategoryId">
+                    </form>
+                </div>
+
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2"
+                        data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                        form="deleteCategoryForm"
+                        class="btn btn-danger px-4 py-2 fw-bold">
+                        Yes, Delete
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <script>
-        // SortableJS for Categories
+        // 1. SortableJS for Categories
         const categoryList = document.getElementById('categorySortable');
         new Sortable(categoryList, {
             animation: 150,
             ghostClass: 'sortable-ghost-cat',
-            filter: '.btn-light', // Prevent the "Add Category" button from being dragged
-            onEnd: function (evt) {
-                console.log('Category moved:', evt.item.dataset.id);
+            filter: '.btn-light', 
+            onEnd: async function (evt) {
+                // Grab all category wrapper IDs in their new order
+                const orderedCategoryIds = Array.from(categoryList.querySelectorAll('.category-wrapper'))
+                    .map(el => el.dataset.id);
+
+                try {
+                    // Send the new array of IDs to your Laravel backend
+                    await api.post('/categories/reorder', { order: orderedCategoryIds });
+                    console.log('Category order saved:', orderedCategoryIds);
+                } catch (error) {
+                    console.error('Failed to save category order', error);
+                }
             }
         });
 
-        // SortableJS for Items Grid
+        // 2. SortableJS for Items
         const itemList = document.getElementById('itemSortable');
         new Sortable(itemList, {
             animation: 150,
             ghostClass: 'sortable-ghost-item',
-            filter: '.ignore-drag', // Prevent the "Add Item" card from being dragged
-            onEnd: function (evt) {
-                console.log('Item moved:', evt.item.dataset.id);
+            filter: '.ignore-drag', 
+            onEnd: async function (evt) {
+                // We only want to save the order of the currently visible category
+                const activeCategory = document.getElementById('categoryInput').value;
+
+                // Grab all item IDs that belong to the active category
+                const orderedItemIds = Array.from(itemList.querySelectorAll(`.categoryItems[data-category="${activeCategory}"]`))
+                    .map(el => el.dataset.id);
+
+                try {
+                    // Send the new array to Laravel
+                    await api.post('/items/reorder', { order: orderedItemIds, category: activeCategory });
+                    console.log('Item order saved:', orderedItemIds);
+                } catch (error) {
+                    console.error('Failed to save item order', error);
+                }
             }
         });
+
+        // // 3. Save Category Modal Logic
+        // document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+        //     e.preventDefault(); // Stop standard form submission
+
+        //     // Convert form data to a JSON object
+        //     const formData = new FormData(this);
+        //     const data = Object.fromEntries(formData.entries());
+
+        //     try {
+        //         const response = await api.post(this.action, data);
+                
+        //         // Close the modal cleanly
+        //         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+        //         modalInstance.hide();
+                
+        //         this.reset(); // Clear the form
+                
+        //         // TODO: Dynamically inject the new category HTML here (we can do this later)
+        //         console.log('Category successfully saved to DB!', response);
+                
+        //         // Temporary fallback to see changes immediately:
+        //         // window.location.reload(); 
+        //     } catch (error) {
+        //         console.error('Error saving category:', error);
+        //     }
+        // });
+
+        // // 4. Save Item Modal Logic
+        // document.getElementById('itemForm').addEventListener('submit', async function(e) {
+        //     e.preventDefault();
+
+        //     const formData = new FormData(this);
+        //     const data = Object.fromEntries(formData.entries());
+
+        //     try {
+        //         const response = await api.post(this.action, data);
+                
+        //         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
+        //         modalInstance.hide();
+                
+        //         this.reset();
+                
+        //         // TODO: Dynamically inject the new item card HTML here (we can do this later)
+        //         console.log('Item successfully saved to DB!', response);
+                
+        //     } catch (error) {
+        //         console.error('Error saving item:', error);
+        //     }
+        // });
+
+        // 5. Open Edit Modal and Populate Data
+        document.getElementById('itemSortable').addEventListener('click', function(e) {
+            // Check if the clicked element (or its parent) is the edit button
+            const editBtn = e.target.closest('.edit-item-btn');
+
+            if (editBtn) {
+                // Climb up the DOM to find the main item card wrapper
+                const itemCard = editBtn.closest('.categoryItems');
+                
+                // Extract data from the DOM
+                const itemId = itemCard.dataset.id;
+                const itemName = itemCard.querySelector('h6').innerText;
+                // Grab the price and strip out the dollar sign/whitespace
+                const itemPrice = itemCard.querySelector('.mt-auto').innerText.replace('$', '').trim();
+
+                // Populate the modal inputs
+                document.getElementById('editItemId').value = itemId;
+                document.getElementById('editItemName').value = itemName;
+                document.getElementById('editItemPrice').value = itemPrice;
+
+                // Open the modal
+                const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+                editModal.show();
+            }
+        });
+
+        // 6. Save Edit Modal Logic
+        document.getElementById('editItemForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            const itemId = data.id; // Grab the ID from the hidden field
+
+            const categoryItems = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
+            const ItemName = categoryItems.querySelector('#itemChangedName');
+            const ItemPrice = categoryItems.querySelector('#itemChangedPrice');
+            try {
+                // We'll use your api.update wrapper and assume your Laravel route follows RESTful conventions like /items/{id}
+                const response = await api.update(`/items/${itemId}/update`, data);
+                
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+                modalInstance.hide();
+                
+                console.log('Item updated successfully in DB!', response);
+
+                ItemName.textContent = data.name;
+                ItemPrice.textContent = data.price;
+                
+            } catch (error) {
+                console.error('Error updating item:', error);
+            }
+        });
+
+        // 7. Trigger Delete Modal
+        document.getElementById('itemSortable').addEventListener('click', function(e) {
+            const deleteBtn = e.target.closest('.delete-item-btn');
+            
+            if (deleteBtn) {
+                const itemCard = deleteBtn.closest('.categoryItems');
+                const itemId = itemCard.dataset.id;
+                const itemName = itemCard.querySelector('h6').innerText;
+
+                // Populate modal with item info
+                document.getElementById('deleteItemId').value = itemId;
+                document.getElementById('deleteItemName').innerText = itemName;
+
+                // Show the modal
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteItemModal'));
+                deleteModal.show();
+            }
+        });
+
+        // 8. Confirm Delete Action
+        document.getElementById('deleteItemForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const itemId = document.getElementById('deleteItemId').value;
+
+            try {
+                // Call your API delete method
+                await api.delete(`/items/${itemId}/delete`);
+                
+                // Hide the modal
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteItemModal'));
+                modalInstance.hide();
+                
+                // Remove the item from the UI immediately
+                const itemElement = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
+                itemElement.remove();
+                
+                console.log('Item deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting item:', error);
+            }
+        });
+
+        // 9
+        document.getElementById('categorySortable').addEventListener('click', function(e) {
+            const deleteBtn = e.target.closest('.delete-category-btn');
+
+            if (!deleteBtn) return;
+
+            const category = deleteBtn.closest('.category-wrapper');
+
+            const categoryId = category.dataset.id;
+            const categoryName = category.dataset.category;
+
+            const itemId = document.getElementById('deleteItemId').value = categoryId;
+            
+            document.getElementById('deleteCategoryName').textContent = categoryName;
+
+            const modal = new bootstrap.Modal(
+                document.getElementById('deleteCategoryModal')
+            );
+
+            modal.show();
+        });
+
+        // 10. Confirm Delete Category Action
+        document.getElementById('deleteCategoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const itemId = document.getElementById('deleteItemId').value;
+
+            try {
+                // Call your API delete method
+                await api.delete(`/category/${itemId}/delete`);
+                
+                // Hide the modal
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal'));
+                modalInstance.hide();
+                
+                // Remove the item from the UI immediately
+                const itemElement = document.querySelector(`.categoryButton[data-id="${itemId}"]`);
+                itemElement.remove();
+                
+                console.log('Item deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting item:', error);
+            }
+        });
+
     </script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -516,6 +834,65 @@
     });
 });
 </script>
+<script>
+    const api = {
+        get: async (url) => {
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                },
+            });
 
+            return res.json();
+        },
+
+        post: async (url, data) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+                body: JSON.stringify(data),
+            });
+
+            return res.json();
+        },
+
+        update: async (url, data, method = "PUT") => {
+            const res = await fetch(url, {
+                method: method, // PUT or PATCH
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+                body: JSON.stringify(data),
+            });
+
+            return res.json();
+        },
+
+        delete: async (url) => {
+            const res = await fetch(url, {
+                method: "DELETE",
+                headers: {
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+            });
+
+            return res.json();
+        }
+    };
+</script>
 </body>
 </html>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class CategoryController extends Controller
 {
@@ -50,6 +52,22 @@ class CategoryController extends Controller
         //
     }
 
+    public function categoryReorder(Request $request) {
+        $category = $request->category;
+        $order = $request->order;
+
+        DB::transaction(function () use ($order) {
+            foreach ($order as $position => $id) {
+                Category::where('id', $id)
+                    ->update([
+                        'position' => $position,
+                ]);
+            }
+        });
+
+        return response()->json(['status' => 'ok']);
+    }
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -69,8 +87,10 @@ class CategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        Category::destroy($id);
+
+        return response()->json(['message' => 'ok']);
     }
 }

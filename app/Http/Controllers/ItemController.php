@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class ItemController extends Controller
 {
@@ -43,16 +45,33 @@ class ItemController extends Controller
         ]);
 
         $lastPosition = Item::max('position') ?? 0;
-        dd(
         Item::create([
             'name' => ucwords(strtolower($validated['name'])),
             'category' => ucwords(strtolower($validated['category'])),
             'price' => $validated['price'],
             'position' => $lastPosition + 1
-        ])
-        );
+        ]);
 
         return back()->with('success', 'Item saved');
+    }
+
+    public function itemReorder(Request $request) {
+        $category = $request->category;
+        $order = $request->order;
+
+        DB::transaction(function () use ($order, $category) {
+            foreach ($order as $position => $id) {
+                Item::where('id', $id)
+                    ->where('category', $category)
+                    ->update([
+                        'position' => $position,
+                    ]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Order updated successfully'
+        ]);
     }
 
     /**
@@ -74,16 +93,22 @@ class ItemController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Item $item)
+    public function update(Request $request, $id)
     {
-        //
+        Item::where('id', $id)->update([
+            'name' => $request->name,
+            'price' => $request->price
+        ]);
+
+        return response()->json(['message' => 'Updated successfully']);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Item $item)
+    public function destroy($id)
     {
-        //
+        Item::destroy($id);
+        return response()->json(['message' => 'Delete successfully']);
     }
 }

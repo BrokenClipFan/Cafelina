@@ -32,7 +32,10 @@ class PageController extends Controller
 
     public function index()
     {
-        //
+        $categories = Category::orderBy('position', 'asc')->get();
+        $items = Item::orderBy('position', 'asc')->get();
+
+        return view('welcome', compact('categories', 'items'));
     }
 
     /**
