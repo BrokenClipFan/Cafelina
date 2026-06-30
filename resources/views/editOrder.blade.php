@@ -200,7 +200,7 @@
 
     <div class="editor-header p-3 d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center">
-            <a href="{{ route('/') }}" class="btn btn-outline-secondary me-3 btn-sm" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
+            <a href="{{ route('home') }}" class="btn btn-outline-secondary me-3 btn-sm" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
             <h5 class="mb-0 fw-bold" style="color: var(--theme-primary);"><i class="bi bi-magic me-2"></i>Live Menu Editor</h5>
         </div>
     </div>
@@ -268,7 +268,7 @@
 
                             <div class="card item-card h-100 p-3">
                                 <h6 class="fw-bold mb-1" id="itemChangedName">{{ $item->name }}</h6>
-                                <p class="text-muted small mb-3">Coffee</p>
+                                <p class="text-muted small mb-3">{{ $item->category }}</p>
 
                                 <div class="mt-auto fw-bold text-primary" id="itemChangedPrice"
                                     style="color: var(--theme-primary) !important;">

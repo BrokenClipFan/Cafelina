@@ -13,5 +13,6 @@ class Purchase extends Model
         'total',
         'payment_method',
         'status',
+        'name'
     ];
 }

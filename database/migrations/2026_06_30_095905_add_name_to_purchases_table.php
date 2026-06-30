@@ -11,16 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase_item', function (Blueprint $table) {
-            $table->id();
-
-            $table->foreignId('purchase_id')->constrained()->onDelete('cascade');
+        Schema::table('purchases', function (Blueprint $table) {
             $table->string('name');
-            $table->string('category');
-            $table->decimal('price', 8, 2);
-            $table->unsignedInteger('count');
-
-            $table->timestamps();
         });
     }
 
@@ -29,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_item');
+        Schema::table('purchases', function (Blueprint $table) {
+            //
+        });
     }
 };

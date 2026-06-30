@@ -123,4 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Default Email Account
+    |--------------------------------------------------------------------------
+    |
+    | Used for changing a default employee to admin
+    | 
+    | 
+    |
+    | 
+    |
+    */
+
+    'admin_email' => env('ADMIN_DEFAULT_GMAIL', 'gaylepalame@gwapo.cum'),
 ];

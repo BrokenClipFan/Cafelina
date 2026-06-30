@@ -132,7 +132,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <input type="text" class="form-control bg-light border-0" placeholder="Enter order name...">
+                        <input type="text" class="form-control bg-light border-0 orderNameInput" placeholder="Enter order name...">
                     </div>
 
                     <div class="flex-grow-1 overflow-auto cartList">
@@ -166,10 +166,10 @@
             </div>
 
             <div class="col-lg-3 col-md-6 h-100">
-                <div class="pos-panel d-flex flex-column" style="background-color: var(--theme-accent-light);">
+                <div class="pos-panel pos-panel3 d-flex flex-column" style="background-color: var(--theme-accent-light);">
                     <h5 class="fw-bold mb-3">Active Kitchen Orders</h5>
                     
-                    <div class="flex-grow-1 overflow-auto">
+                    <div class="flex-grow-1 overflow-auto pos-panel-list">
                         <div class="card mb-3 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -206,6 +206,7 @@
         </div>
     </div>
 
+    @include('partials.notifications');
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
@@ -271,7 +272,6 @@
             .forEach(item => {
                 itemContainer.appendChild(
                     createItemCard(item.id, item.category, item.name, item.price)
-
                 );
             });
 
@@ -337,13 +337,14 @@
     });
 
 </script>
-    <script>
-        function addToCart(btn) {
+<script>
+    function addToCart(btn) {
         const cartList = document.querySelector('.cartList');
         
         // 1. Get Item Data
         const name = btn.dataset.name;
         const price = parseFloat(btn.dataset.price);
+        const category = btn.dataset.category;
 
         // 2. Check if item already exists in the cart
         const existingItems = Array.from(cartList.querySelectorAll('.order-item'));
@@ -359,13 +360,18 @@
             // Create new element
             const newItem = document.createElement('div');
             newItem.className = 'order-item mb-3';
+            newItem.setAttribute('data-category', category);
             newItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex justify-content-between align-items-start mb-2" >
                     <div>
                         <h6 class="mb-0">${name}</h6>
                         <small class="text-muted">$${price.toFixed(2)} each</small>
                     </div>
-                    <button class="btn btn-sm text-danger p-0 delete-btn"><i class="bi bi-trash"></i></button>
+                    <div>
+                        <button class="btn btn-sm text-danger p-0 delete-btn"><i class="bi bi-trash"></i></button>
+                        </br>
+                        <small>${category}</small>
+                    </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group btn-group-sm border rounded">
@@ -416,9 +422,7 @@
             totalAllCart();
         });
     }
-
     
-
     function totalAllCart() {
         const cartTotal = document.querySelector('.cartTotal');
         const allItemTotals = document.querySelectorAll('.item-total');
@@ -441,6 +445,7 @@
         // 1. Remove all items
         const items = document.querySelectorAll('.order-item');
         items.forEach(item => {
+            console.log(item.dataset.category)
             item.remove();
         });
 
@@ -449,9 +454,8 @@
         if (cartTotal) {
             cartTotal.textContent = "$0.00";
         }
-
-        console.log('Cart cleared');
     }
+    
     const btn = document.querySelector('.clearCartBtn');
     btn.addEventListener('click', clearCart);
     </script>
@@ -465,15 +469,18 @@
 
             // Extracting data from each item
             items.forEach(item => {
+                const orderName = document.querySelector('.orderNameInput').value;
                 const name = item.querySelector('h6').textContent;
                 const quantity = item.querySelector('.quality-Inputs').value;
-                // const category
+                const category = item.dataset.category;
                 const price = item.querySelector('.item-total').textContent.replace('$', '');
                 
                 cartData.push({
                     name: name,
                     quantity: parseInt(quantity),
-                    price: parseFloat(price)
+                    category: category,
+                    price: parseFloat(price),
+                    orderName: orderName
                 });
             });
 
@@ -483,22 +490,24 @@
                 return;
             }
 
-            console.log(cartData);
-
-            // try {
-            //     // Send to your backend API endpoint
-            //     const response = await api.post('/api/checkout', { items: cartData });
-            //     console.log('Order successful:', response);
-                
-            //     // Clear the UI after success
-            //     clearCart();
-            //     alert("Order placed successfully!");
-            // } catch (error) {
-            //     console.error('Failed to save cart:', error);
-            //     alert("Something went wrong, please try again.");
-            // }
-        }
+            console.log(cartData)
+            
+            try {
+                // Send to your backend API endpoint
+                const response = await api.post('/cart/checkout', { items: cartData });
+                clearCart();
+                window.showNotification(response.message, 'success');
+            } catch (error) {
+                if (error.response) {
+                    console.error('Server Error Data:', error.response.data);
+                    console.error('Server Status Code:', error.response.status);
+                } else {
+                    console.error('Failed to save cart:', error);
+                }
+                }
+            }
     </script>
+    
     <script>
         const api = {
             get: async (url) => {
@@ -558,5 +567,132 @@
                 return res.json();
             }
         };
+    </script>
+    <script>
+        function createOrderCard(order) {
+            // 1. Determine status configuration
+            const isPreparing = order.status.toLowerCase() === 'preparing';
+            const badgeClass = isPreparing ? 'bg-warning text-dark' : 'bg-success';
+            const opacityClass = isPreparing ? '' : 'opacity-75';
+            
+            // 2. Generate the items list elements safely
+            const itemsListHtml = order.items.map(item => `
+                <li>${item.count || item.quantity}x ${item.name}</li>
+            `).join('');
+
+            // 3. Generate the action button based on current status
+            const actionButtonHtml = isPreparing 
+                ? `<button class="btn btn-sm btn-success w-100 fw-bold btn-mark-ready" data-order-name="${order.name}">
+                    <i class="bi bi-check2-circle me-1"></i> Mark as Ready
+                </button>`
+                : `<button class="btn btn-sm btn-outline-secondary w-100 btn-complete-clear" data-order-name="${order.name}">
+                    Complete & Clear
+                </button>`;
+
+            // 4. Create the parent card element wrapper
+            const cardElement = document.createElement('div');
+            cardElement.className = `card mb-3 border-0 shadow-sm ${opacityClass}`;
+            cardElement.setAttribute('data-order-id', order.name);
+
+            // 5. Inject the layout template
+            cardElement.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge ${badgeClass}">${order.status}</span>
+                        <span class="text-muted small">${order.timeAgo}</span>
+                    </div>
+                    <h6 class="fw-bold">Order: ${order.name}</h6>
+                    <ul class="list-unstyled small mb-3">
+                        ${itemsListHtml}
+                    </ul>
+                    ${actionButtonHtml}
+                </div>
+            `;
+
+            return cardElement;
+        }
+
+        // Target your scrolling panel layout container
+        // const kitchenOrderContainer = document.querySelector('.pos-panel-list');
+
+        // // Example data array received from your backend api
+        // const activeOrders = [
+        //     {
+        //         name: "Olala",
+        //         status: "Preparing",
+        //         timeAgo: "2 mins ago",
+        //         items: [
+        //             { name: "Latte", count: 1 },
+        //             { name: "Espresso", count: 2 }
+        //         ]
+        //     },
+        //     {
+        //         name: "19203",
+        //         status: "Ready",
+        //         timeAgo: "Just now",
+        //         items: [
+        //             { name: "Americano", count: 1 }
+        //         ]
+        //     }
+        // ];
+
+        // // Clear out static design mockups, build dynamic ones, and display them
+        // kitchenOrderContainer.innerHTML = '';
+
+        // activeOrders.forEach(order => {
+        //     const generatedCard = createOrderCard(order);
+        //     kitchenOrderContainer.appendChild(generatedCard);
+        // });
+
+        async function loadKitchenOrders() {
+            try {
+                // 2. CRITICAL: Add the 'await' keyword here so JS pauses until the server answers
+                const response = await api.get('/get/queue');
+                console.log(response);
+                
+                // Grab your payload wrapper (Axios packages the response in a 'data' property)
+                // If your Laravel API returns json(['data' => ...]), your array lives in response.data.data
+                const ordersArray = response.data.data || response.data;
+                
+                const container = document.querySelector('.pos-panel-list');
+                if (!container) {
+                    console.error("Container '.pos-panel-list' not found in the DOM.");
+                    return;
+                }
+                
+                container.innerHTML = ''; // Clear old static entries
+
+                // Loop through the nested data array safely
+                ordersArray.forEach(order => {
+                    
+                    // Format data to match what your element builder expects
+                    const formattedOrder = {
+                        name: order.order_name || order.name, // Adjust based on your schema column name
+                        status: order.status,          
+                        timeAgo: "Just now",           // You can calculate actual time from order.created_at
+                        items: order.items || []       // Fallback to empty array if no items found
+                    };
+
+                    // Build the DOM element card
+                    const card = createOrderCard(formattedOrder);
+                    
+                    // Append it directly to the dashboard
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                if (error.response) {
+                    console.error('Server Error Data:', error.response.data);
+                    console.error('Server Status Code:', error.response.status);
+                } else {
+                    console.error('Failed to load kitchen queue:', error);
+                }
+            }
+        }
+
+        // Call it on page load
+        loadKitchenOrders();
+
+        // Refresh the kitchen dashboard every 30 seconds
+        setInterval(loadKitchenOrders, 1000);
     </script>
 </html>

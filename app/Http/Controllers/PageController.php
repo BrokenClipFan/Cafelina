@@ -15,7 +15,6 @@ class PageController extends Controller
         $categories = Category::orderBy('position', 'asc')->get();
         
         if ($categories->isEmpty()) {
-            dd('here');
             return view('editOrder', [
                 'categories' => collect(),
                 'items' => collect(),
