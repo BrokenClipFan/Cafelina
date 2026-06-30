@@ -483,18 +483,20 @@
                 return;
             }
 
-            try {
-                // Send to your backend API endpoint
-                const response = await api.post('/api/checkout', { items: cartData });
-                console.log('Order successful:', response);
+            console.log(cartData);
+
+            // try {
+            //     // Send to your backend API endpoint
+            //     const response = await api.post('/api/checkout', { items: cartData });
+            //     console.log('Order successful:', response);
                 
-                // Clear the UI after success
-                clearCart();
-                alert("Order placed successfully!");
-            } catch (error) {
-                console.error('Failed to save cart:', error);
-                alert("Something went wrong, please try again.");
-            }
+            //     // Clear the UI after success
+            //     clearCart();
+            //     alert("Order placed successfully!");
+            // } catch (error) {
+            //     console.error('Failed to save cart:', error);
+            //     alert("Something went wrong, please try again.");
+            // }
         }
     </script>
     <script>
