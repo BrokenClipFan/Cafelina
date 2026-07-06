@@ -9,6 +9,7 @@ class QueueList extends Model
     protected $fillable = [
         'purchase_id',
         'order_name',
-        'status'
+        'status',
+        'user_id'
     ];
 }

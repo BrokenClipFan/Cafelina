@@ -170,7 +170,7 @@
                     <h5 class="fw-bold mb-3">Active Kitchen Orders</h5>
                     
                     <div class="flex-grow-1 overflow-auto pos-panel-list">
-                        <div class="card mb-3 border-0 shadow-sm">
+                        {{-- <div class="card mb-3 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="badge bg-warning text-dark">Preparing</span>
@@ -197,7 +197,7 @@
                                 </ul>
                                 <button class="btn btn-sm btn-outline-secondary w-100">Complete & Clear</button>
                             </div>
-                        </div>
+                        </div> --}}
                     </div>
                     
                 </div>
@@ -209,6 +209,66 @@
     @include('partials.notifications');
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+<script>
+    const api = {
+        get: async (url) => {
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                },
+            });
+
+            return res.json();
+        },
+
+        post: async (url, data) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+                body: JSON.stringify(data),
+            });
+
+            return res.json();
+        },
+
+        update: async (url, data, method = "PUT") => {
+            const res = await fetch(url, {
+                method: method, // PUT or PATCH
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+                body: JSON.stringify(data),
+            });
+
+            return res.json();
+        },
+
+        delete: async (url) => {
+            const res = await fetch(url, {
+                method: "DELETE",
+                headers: {
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                },
+            });
+
+            return res.json();
+        }
+    };
+</script>
 
 <script>
     const CATEGORIES = @json($categories);
@@ -462,7 +522,7 @@
     <script>
         const submitCartBtn = document.querySelector('.submitCart');
         submitCartBtn.addEventListener('click', saveCart);
-
+        
         async function saveCart() {
             const items = document.querySelectorAll('.order-item');
             const cartData = []; 
@@ -490,13 +550,13 @@
                 return;
             }
 
-            console.log(cartData)
+            loadKitchenOrders();
             
             try {
                 // Send to your backend API endpoint
                 const response = await api.post('/cart/checkout', { items: cartData });
                 clearCart();
-                window.showNotification(response.message, 'success');
+                document.querySelector('.orderNameInput').value = "";
             } catch (error) {
                 if (error.response) {
                     console.error('Server Error Data:', error.response.data);
@@ -506,67 +566,6 @@
                 }
                 }
             }
-    </script>
-    
-    <script>
-        const api = {
-            get: async (url) => {
-                const res = await fetch(url, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                    },
-                });
-
-                return res.json();
-            },
-
-            post: async (url, data) => {
-                const res = await fetch(url, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": document
-                            .querySelector('meta[name="csrf-token"]')
-                            .getAttribute("content"),
-                    },
-                    body: JSON.stringify(data),
-                });
-
-                return res.json();
-            },
-
-            update: async (url, data, method = "PUT") => {
-                const res = await fetch(url, {
-                    method: method, // PUT or PATCH
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": document
-                            .querySelector('meta[name="csrf-token"]')
-                            .getAttribute("content"),
-                    },
-                    body: JSON.stringify(data),
-                });
-
-                return res.json();
-            },
-
-            delete: async (url) => {
-                const res = await fetch(url, {
-                    method: "DELETE",
-                    headers: {
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": document
-                            .querySelector('meta[name="csrf-token"]')
-                            .getAttribute("content"),
-                    },
-                });
-
-                return res.json();
-            }
-        };
     </script>
     <script>
         function createOrderCard(order) {
@@ -582,7 +581,7 @@
 
             // 3. Generate the action button based on current status
             const actionButtonHtml = isPreparing 
-                ? `<button class="btn btn-sm btn-success w-100 fw-bold btn-mark-ready" data-order-name="${order.name}">
+                ? `<button class="btn btn-sm btn-warning w-100 fw-bold btn-mark-ready" data-order-name="${order.name}">
                     <i class="bi bi-check2-circle me-1"></i> Mark as Ready
                 </button>`
                 : `<button class="btn btn-sm btn-outline-secondary w-100 btn-complete-clear" data-order-name="${order.name}">
@@ -611,38 +610,6 @@
 
             return cardElement;
         }
-
-        // Target your scrolling panel layout container
-        // const kitchenOrderContainer = document.querySelector('.pos-panel-list');
-
-        // // Example data array received from your backend api
-        // const activeOrders = [
-        //     {
-        //         name: "Olala",
-        //         status: "Preparing",
-        //         timeAgo: "2 mins ago",
-        //         items: [
-        //             { name: "Latte", count: 1 },
-        //             { name: "Espresso", count: 2 }
-        //         ]
-        //     },
-        //     {
-        //         name: "19203",
-        //         status: "Ready",
-        //         timeAgo: "Just now",
-        //         items: [
-        //             { name: "Americano", count: 1 }
-        //         ]
-        //     }
-        // ];
-
-        // // Clear out static design mockups, build dynamic ones, and display them
-        // kitchenOrderContainer.innerHTML = '';
-
-        // activeOrders.forEach(order => {
-        //     const generatedCard = createOrderCard(order);
-        //     kitchenOrderContainer.appendChild(generatedCard);
-        // });
 
         async function loadKitchenOrders() {
             try {
@@ -689,10 +656,44 @@
             }
         }
 
-        // Call it on page load
-        loadKitchenOrders();
+        const posContainerList = document.querySelector('.pos-panel-list');
 
-        // Refresh the kitchen dashboard every 30 seconds
-        setInterval(loadKitchenOrders, 1000);
+        // Added 'async' right here 
+        posContainerList.addEventListener('click', async (event) => {
+            const button = event.target.closest('.btn-mark-ready, .btn-complete-clear');
+            
+            if (!button) return; // If they didn't click a button, do nothing
+
+            const orderName = button.getAttribute('data-order-name');
+
+            try {
+                // Disable the button immediately so the user can't double-click it while waiting
+                button.disabled = true;
+                button.innerText = "Processing...";
+
+                // 3. Route the request based on which button was clicked
+                if (button.classList.contains('btn-mark-ready')) {
+                    
+                    // Calling a POST or PUT endpoint to update status
+                    const response = await api.update(`/api/orders/${orderName}/ready`, { status: 'ready' });
+                } else if (button.classList.contains('btn-complete-clear')) {
+                    
+                    // Calling a DELETE endpoint to clear the order
+                    const response = await api.delete(`/api/orders/${orderName}/remove`);
+                }
+
+                loadKitchenOrders();
+            } catch (error) {
+                console.error('API call failed:', error);
+                
+                // Error handling fallback: re-enable the button if the network request fails
+                button.disabled = false;
+                button.innerText = button.classList.contains('btn-mark-ready') ? "Mark as Ready" : "Complete & Clear";
+                alert('Something went wrong. Please try again.');
+            }
+        });
+
+        loadKitchenOrders();
     </script>
+    
 </html>

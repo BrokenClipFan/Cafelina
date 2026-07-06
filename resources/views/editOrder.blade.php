@@ -375,16 +375,14 @@
                       <input type="hidden" name="icon" id="selectedIcon" value="bi-cup-hot">
                       <label class="form-label fw-bold small text-uppercase">Select Icon</label>
                       <div class="d-flex flex-wrap gap-2 p-3 bg-white rounded shadow-sm border" id="iconPicker">
-                          <div class="icon-option active" data-icon="bi-cup-hot"><i class="bi bi-cup-hot"></i></div>
-                          <div class="icon-option" data-icon="bi-cup"><i class="bi bi-cup"></i></div>
-                          <div class="icon-option" data-icon="bi-droplet-half"><i class="bi bi-droplet-half"></i></div>
-                          <div class="icon-option" data-icon="bi-snow"><i class="bi bi-snow"></i></div>
-                          <div class="icon-option" data-icon="bi-cake2"><i class="bi bi-cake2"></i></div>
-                          <div class="icon-option" data-icon="bi-baguette"><i class="bi bi-baguette"></i></div>
-                          <div class="icon-option" data-icon="bi-egg-fried"><i class="bi bi-egg-fried"></i></div>
-                          <div class="icon-option" data-icon="bi-pie-chart"><i class="bi bi-pie-chart"></i></div>
-                          <div class="icon-option" data-icon="bi-brightness-high"><i class="bi bi-brightness-high"></i></div>
-                          <div class="icon-option" data-icon="bi-moon-stars"><i class="bi bi-moon-stars"></i></div>
+                          <div class="icon-option active" data-icon="bi-cup-hot" data-name="Hot Drinks"><i class="bi bi-cup-hot"></i></div>
+                          <div class="icon-option" data-icon="bi-cup" data-name="None Coffee"><i class="bi bi-cup"></i></div>
+                          <div class="icon-option" data-icon="bi-droplet-half" data-name="Drinks"><i class="bi bi-droplet-half"></i></div>
+                          <div class="icon-option" data-icon="bi-snow" data-name="Cold Drinks"><i class="bi bi-snow"></i></div>
+                          <div class="icon-option" data-icon="bi-egg-fried" data-name="Food"><i class="bi bi-egg-fried"></i></div>
+                          <div class="icon-option" data-icon="bi-brightness-high" data-name="Morning Snacks"><i class="bi bi-brightness-high"></i></div>
+                          <div class="icon-option" data-icon="bi-moon-stars" data-name="Midnight Snacks"><i class="bi bi-moon-stars"></i></div>
+                          <div class="icon-option" data-icon="bi-emoji-smile" data-name="Happy Meals"><i class="bi bi-emoji-smile"></i></div>
                       </div>
                     </div>
                   </div>
@@ -647,7 +645,7 @@
 
                 // Populate the modal inputs
                 document.getElementById('editItemId').value = itemId;
-                document.getElementById('editItemName').value = itemName;
+                document.getElementById('editItemName').value = itemName.toUpperCase();
                 document.getElementById('editItemPrice').value = itemPrice;
 
                 // Open the modal
@@ -676,7 +674,7 @@
                 
                 console.log('Item updated successfully in DB!', response);
 
-                ItemName.textContent = data.name;
+                ItemName.textContent = data.name.toUpperCase();
                 ItemPrice.textContent = data.price;
                 
             } catch (error) {
@@ -792,6 +790,9 @@
                 // 3. Grab the data-icon value and assign it to the hidden input
                 const chosenIcon = this.getAttribute('data-icon');
                 selectedIconInput.value = chosenIcon;
+
+                const inptu = document.getElementById('categoryName');
+                inptu.value = option.dataset.name.toUpperCase();
             });
         });
     });

@@ -26,6 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [PageController::class, 'index'])->name('home');
     
     Route::post('/cart/checkout', [PurchaseController::class, 'purchase']);
+
+    Route::put('/api/orders/{orderName}/ready', [QueueListController::class, 'update']);
+    Route::delete('/api/orders/{orderName}/remove', [QueueListController::class, 'destroy']);
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {

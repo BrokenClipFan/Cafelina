@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\QueueList;
 use App\Models\PurchaseItem;
+use App\Services\QueueService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class QueueListController extends Controller
 {
     public function getOrders() {
         // Fetch queue list data joined with their matching items
-        $ordersWithItems = DB::table('queue_lists')
+        $ordersWithItems = DB::table('queue_lists')->where('user_id', Auth::user()->id)
             ->join('purchase_items', 'queue_lists.purchase_id', '=', 'purchase_items.purchase_id')
             ->select(
                 'queue_lists.order_name as name',
@@ -39,6 +41,24 @@ class QueueListController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $formattedOrders
+        ]);
+    }
+
+    public function update(QueueService $queService, $orderName) {
+
+        $queService->markAsReady($orderName);
+    
+        return response()->json([
+            'debug_message' => 'Hit the controller successfully!',
+            'passed_order_name' => $orderName
+        ]);
+    }
+
+    public function destroy(QueueService $queService, $orderName) {
+        $queService->completeOrder($orderName);
+        return response()->json([
+            'debug_message' => 'Hit the controller successfully!',
+            'passed_order_name' => $orderName
         ]);
     }
 }

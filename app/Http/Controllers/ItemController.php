@@ -46,7 +46,7 @@ class ItemController extends Controller
 
         $lastPosition = Item::max('position') ?? 0;
         Item::create([
-            'name' => ucwords(strtolower($validated['name'])),
+            'name' => strtoupper($validated['name']),
             'category' => ucwords(strtolower($validated['category'])),
             'price' => $validated['price'],
             'position' => $lastPosition + 1
