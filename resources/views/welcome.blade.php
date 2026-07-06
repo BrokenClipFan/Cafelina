@@ -8,555 +8,734 @@
     <title>Cafelina POS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
     <style>
-        /* Custom Cafelina Theme */
+        /* ============================================================
+           Cafelina POS — shares the cafe token system from the order
+           board: paper/espresso palette, Fraunces + Space Grotesk.
+           The order panel is styled like a printed receipt (dot-leader
+           rows), which is literally what it's building.
+           ============================================================ */
         :root {
-            --theme-bg: #FFEAC5;
-            --theme-accent-light: #FFDBB5;
-            --theme-primary: #6C4E31;
-            --theme-dark: #603F26;
+            --paper: #F7EFE0;
+            --paper-warm: #EAD9B7;
+            --ink: #2E1D14;
+            --ink-soft: #6B5647;
+            --espresso: #40291B;
+            --caramel: #C6863B;
+            --caramel-deep: #A4692A;
+            --caramel-tint: #F6E7C9;
+            --moss: #3F6B4C;
+            --moss-deep: #2E5038;
+            --moss-tint: #E1EBE0;
+            --stamp: #A8432E;
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            background-color: var(--theme-bg);
-            color: var(--theme-dark);
+            background-color: var(--paper);
+            color: var(--ink);
             height: 100vh;
-            overflow: hidden; /* Prevents whole-page scrolling, keeps scrolling in panels */
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Reusable Panel Styling */
-        .pos-panel {
-            background-color: #ffffff;
-            border-radius: 12px;
-            height: calc(100vh - 30px);
-            overflow-y: auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            padding: 20px;
+        h1, h2, h3, h4, h5, h6 { font-family: 'Fraunces', serif; }
+
+        /* ---------------- Shell & panels ---------------- */
+        .pos-shell {
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1.7fr 1fr 1fr;
+            gap: 16px;
+            padding: 16px;
         }
 
-        /* Custom Button Overrides */
-        .btn-theme {
-            background-color: var(--theme-primary);
-            color: #fff;
-            border: none;
-        }
-        .btn-theme:hover {
-            background-color: var(--theme-dark);
-            color: #fff;
-        }
-        .btn-outline-theme {
-            color: var(--theme-primary);
-            border-color: var(--theme-primary);
-        }
-        .btn-outline-theme:hover, .btn-outline-theme.active {
-            background-color: var(--theme-primary);
-            color: #fff;
+        @media (max-width: 992px) {
+            .pos-shell { grid-template-columns: 1fr; grid-auto-rows: minmax(320px, 1fr); overflow-y: auto; height: auto; }
+            body { overflow: auto; }
         }
 
-        /* Category & Item Styling */
-        .category-scroll {
+        .panel {
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(64, 41, 27, 0.06);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin: 0 0 2px;
+            color: var(--ink);
+        }
+
+        .panel-sub {
+            font-size: 0.82rem;
+            color: var(--ink-soft);
+            margin-bottom: 18px;
+        }
+
+        /* ---------------- Menu panel ---------------- */
+        .category-rail {
+            display: flex;
+            gap: 8px;
             overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
+            margin-bottom: 8px;
         }
-        .category-scroll::-webkit-scrollbar { height: 6px; }
-        .category-scroll::-webkit-scrollbar-thumb { background: var(--theme-accent-light); border-radius: 4px; }
+        .category-rail::-webkit-scrollbar { height: 5px; }
+        .category-rail::-webkit-scrollbar-thumb { background: var(--paper-warm); border-radius: 4px; }
 
-        .item-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            transition: all 0.2s ease;
+        .category-btn {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 999px;
+            border: 1.5px solid var(--caramel);
+            background: transparent;
+            color: var(--caramel-deep);
+            font-weight: 600;
+            font-size: 0.92rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .category-btn i { opacity: 0.7; }
+        .category-btn:hover { background: var(--caramel-tint); }
+        .category-btn[data-active="true"] {
+            background: var(--caramel);
+            color: #fff;
+        }
+        .category-btn[data-active="true"] i { opacity: 0.9; }
+
+        .item-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 14px;
+            align-content: start;
+            padding: 4px 4px 4px 0;
+        }
+
+        .menu-item {
+            border: 1.5px solid var(--paper-warm);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            background: #fff;
+            transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .menu-item:hover {
+            transform: translateY(-3px);
+            border-color: var(--caramel);
+            box-shadow: 0 6px 14px rgba(198, 134, 59, 0.18);
+        }
+        .menu-item:focus-visible {
+            outline: 2px solid var(--caramel-deep);
+            outline-offset: 2px;
+        }
+        .menu-item .name {
+            font-weight: 600;
+            font-size: 1.02rem;
+            margin-bottom: 2px;
+        }
+        .menu-item .category {
+            font-size: 0.78rem;
+            color: var(--ink-soft);
+            margin-bottom: 14px;
+        }
+        .menu-item .price {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--caramel-deep);
+        }
+
+        /* ---------------- Order / receipt panel ---------------- */
+        .panel--order .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .clear-btn {
+            border: none;
+            background: none;
+            color: var(--stamp);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 6px;
+        }
+        .clear-btn:hover { text-decoration: underline; }
+
+        .order-name-input {
+            width: 100%;
+            border: none;
+            border-bottom: 2px dashed var(--paper-warm);
+            background: transparent;
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-size: 1.05rem;
+            padding: 6px 2px 10px;
+            margin-bottom: 16px;
+            color: var(--ink);
+        }
+        .order-name-input:focus { outline: none; border-color: var(--caramel); }
+        .order-name-input::placeholder { color: var(--ink-soft); opacity: 0.6; }
+
+        .cart-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .cart-empty {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--ink-soft);
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        .cart-empty i { font-size: 1.8rem; opacity: 0.5; }
+
+        .receipt-line {
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed var(--paper-warm);
+        }
+
+        /* dot-leader row: name .......... price, like a printed receipt */
+        .receipt-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .receipt-row .item-name {
+            font-weight: 600;
+            font-size: 0.98rem;
+            white-space: nowrap;
+        }
+        .receipt-row .leader {
+            flex: 1;
+            border-bottom: 2px dotted var(--ink-soft);
+            opacity: 0.35;
+            transform: translateY(-4px);
+        }
+        .receipt-row .item-total {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--caramel-deep);
+            white-space: nowrap;
+        }
+
+        .receipt-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .receipt-meta .category-tag {
+            font-size: 0.76rem;
+            color: var(--ink-soft);
+        }
+
+        .qty-stepper {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--paper-warm);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .qty-stepper button {
+            border: none;
+            background: var(--paper);
+            width: 26px;
+            height: 26px;
+            font-weight: 700;
+            color: var(--caramel-deep);
             cursor: pointer;
         }
-        .item-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--theme-primary);
-            box-shadow: 0 4px 8px rgba(108, 78, 49, 0.15);
-        }
-
-        /* Order List Styling */
-        .order-item {
-            border-bottom: 1px solid var(--theme-accent-light);
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .quantity-control input {
-            width: 40px;
+        .qty-stepper button:hover { background: var(--caramel-tint); }
+        .qty-input {
+            width: 30px;
             text-align: center;
             border: none;
-            background-color: var(--theme-bg);
-            border-radius: 4px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            background: #fff;
         }
 
-        .quality-Inputs {
-            width: 150px;
+        .delete-btn {
             border: none;
+            background: none;
+            color: var(--stamp);
+            opacity: 0.7;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .delete-btn:hover { opacity: 1; }
+
+        .order-footer {
+            border-top: 2px dashed var(--paper-warm);
+            padding-top: 14px;
+            margin-top: 10px;
+        }
+        .order-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .order-total-row .label {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .order-total-row .total {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--caramel-deep);
         }
 
-        .text-white {
-            color: white;
+        .submit-btn {
+            width: 100%;
+            border: none;
+            background: var(--espresso);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .submit-btn:hover { background: var(--caramel-deep); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ---------------- Kitchen panel ---------------- */
+        .panel--kitchen {
+            background: var(--caramel-tint);
         }
 
-        .primary-text-color{
-            color: var(--theme-primary);
+        .kitchen-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 2px;
         }
+
+        .kitchen-empty {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--ink-soft);
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .ticket {
+            position: relative;
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(64, 41, 27, 0.07);
+        }
+        .ticket--ready { background: var(--moss-tint); }
+
+        .ticket-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .status-tag {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 999px;
+            color: #fff;
+        }
+        .status-tag--preparing { background: var(--caramel-deep); }
+        .status-tag--ready { background: var(--moss-deep); }
+
+        .time-ago { font-size: 0.78rem; color: var(--ink-soft); }
+
+        .ticket-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin: 0 0 6px;
+        }
+
+        .ticket-items {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 12px;
+            font-size: 0.85rem;
+            color: var(--ink-soft);
+        }
+        .ticket-items li { line-height: 1.5; }
+
+        .ticket-action {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            padding: 9px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+        }
+        .ticket-action--ready {
+            background: var(--caramel);
+            color: #fff;
+        }
+        .ticket-action--ready:hover { background: var(--caramel-deep); }
+        .ticket-action--clear {
+            background: transparent;
+            border: 1.5px solid var(--moss-deep);
+            color: var(--moss-deep);
+        }
+        .ticket-action--clear:hover { background: var(--moss-tint); }
+        .ticket-action:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
-<body class="p-3">
+<body>
 
-    <div class="container-fluid h-100">
-        <div class="row g-3 h-100">
-            
-            <div class="col-lg-6 col-md-12 h-100">
-                <div class="pos-panel d-flex flex-column">
-                    <h4 class="mb-1 fw-bold">Cafelina POS</h4>
-                    <p class="text-muted small mb-3">Select items to add to order</p>
+    <div class="pos-shell">
 
-                    <div class="category-scroll mb-4 d-flex gap-2">
-                        {{-- Categories buttons --}}
-                    </div>
+        <section class="panel panel--menu">
+            <h4 class="panel-title">Cafelina POS</h4>
+            <p class="panel-sub">Tap an item to add it to the order</p>
 
-                    <div class="item-scroll row g-3 overflow-auto flex-grow-1 align-content-start">
-                        
-                    </div>
+            <div class="category-rail"><!-- category buttons render here --></div>
+
+            <div class="item-grid"><!-- item cards render here --></div>
+        </section>
+
+        <section class="panel panel--order">
+            <div class="panel-head">
+                <div>
+                    <h5 class="panel-title">Current order</h5>
+                </div>
+                <button class="clear-btn clearCartBtn"><i class="bi bi-x-lg"></i> Clear</button>
+            </div>
+
+            <input type="text" class="order-name-input orderNameInput" placeholder="Order for…">
+
+            <div class="cart-list">
+                <div class="cart-empty">
+                    <i class="bi bi-cup"></i>
+                    <span>No items yet — tap something from the menu</span>
                 </div>
             </div>
 
-            <div class="col-lg-3 col-md-6 h-100">
-                <div class="pos-panel d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Current Order</h5>
-                        <button class="btn btn-sm btn-link text-danger text-decoration-none clearCartBtn"><i class="bi bi-x"></i> Clear</button>
-                    </div>
-
-                    <div class="mb-3">
-                        <input type="text" class="form-control bg-light border-0 orderNameInput" placeholder="Enter order name...">
-                    </div>
-
-                    <div class="flex-grow-1 overflow-auto cartList">
-                        {{-- <div class="order-item">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h6 class="mb-0">Latte</h6>
-                                    <small class="text-muted">$4.75 each</small>
-                                </div>
-                                <button class="btn btn-sm text-danger p-0"><i class="bi bi-trash"></i></button>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="btn-group btn-group-sm border rounded">
-                                    <button class="btn btn-light bg-white border-0">-</button>
-                                    <input class="quality-Inputs" type="text" value="1" readonly>
-                                    <button class="btn btn-light bg-white border-0">+</button>
-                                </div>
-                                <span class="fw-bold" style="color: var(--theme-primary);">$4.75</span>
-                            </div>
-                        </div> --}}
-                    </div>
-
-                    <div class="border-top pt-3 mt-2">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Total</h5>
-                            <h4 class="mb-0 fw-bold cartTotal" style="color: var(--theme-primary);">$0.00</h4>
-                        </div>
-                        <button class="btn btn-theme w-100 py-3 fw-bold fs-6 submitCart">Complete Order</button>
-                    </div>
+            <div class="order-footer">
+                <div class="order-total-row">
+                    <span class="label">Total</span>
+                    <span class="total cartTotal">$0.00</span>
                 </div>
+                <button class="submit-btn submitCart">Send to kitchen</button>
             </div>
+        </section>
 
-            <div class="col-lg-3 col-md-6 h-100">
-                <div class="pos-panel pos-panel3 d-flex flex-column" style="background-color: var(--theme-accent-light);">
-                    <h5 class="fw-bold mb-3">Active Kitchen Orders</h5>
-                    
-                    <div class="flex-grow-1 overflow-auto pos-panel-list">
-                        {{-- <div class="card mb-3 border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-warning text-dark">Preparing</span>
-                                    <span class="text-muted small">2 mins ago</span>
-                                </div>
-                                <h6 class="fw-bold">Order: John D.</h6>
-                                <ul class="list-unstyled small mb-3">
-                                    <li>1x Latte</li>
-                                    <li>2x Espresso</li>
-                                </ul>
-                                <button class="btn btn-sm btn-success w-100 fw-bold"><i class="bi bi-check2-circle me-1"></i> Mark as Ready</button>
-                            </div>
-                        </div>
+        <section class="panel panel--kitchen">
+            <h5 class="panel-title">Active kitchen orders</h5>
+            <p class="panel-sub">Live from the queue</p>
 
-                        <div class="card mb-3 border-0 shadow-sm opacity-75">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-success">Ready</span>
-                                    <span class="text-muted small">Just now</span>
-                                </div>
-                                <h6 class="fw-bold">Order: Sarah W.</h6>
-                                <ul class="list-unstyled small mb-3">
-                                    <li>1x Americano</li>
-                                </ul>
-                                <button class="btn btn-sm btn-outline-secondary w-100">Complete & Clear</button>
-                            </div>
-                        </div> --}}
-                    </div>
-                    
-                </div>
-            </div>
+            <div class="kitchen-list"></div>
+        </section>
 
-        </div>
     </div>
 
-    @include('partials.notifications');
+    @include('partials.notifications')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-<script>
-    const api = {
-        get: async (url) => {
-            const res = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json",
-                },
-            });
 
-            return res.json();
-        },
+    <script>
+        const api = {
+            get: async (url) => {
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                });
+                return res.json();
+            },
 
-        post: async (url, data) => {
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-                body: JSON.stringify(data),
-            });
+            post: async (url, data) => {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify(data),
+                });
+                return res.json();
+            },
 
-            return res.json();
-        },
+            update: async (url, data, method = 'PUT') => {
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify(data),
+                });
+                return res.json();
+            },
 
-        update: async (url, data, method = "PUT") => {
-            const res = await fetch(url, {
-                method: method, // PUT or PATCH
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-                body: JSON.stringify(data),
-            });
+            delete: async (url) => {
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                });
+                return res.json();
+            },
+        };
+    </script>
 
-            return res.json();
-        },
+    <script>
+        /* ---------------- Menu: categories + items ---------------- */
+        const CATEGORIES = @json($categories);
+        const ITEMS = @json($items);
 
-        delete: async (url) => {
-            const res = await fetch(url, {
-                method: "DELETE",
-                headers: {
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-            });
+        const categoryRail = document.querySelector('.category-rail');
+        const itemGrid = document.querySelector('.item-grid');
 
-            return res.json();
+        function categoryButtonHtml(cat, isFirst) {
+            return `
+                <button class="category-btn"
+                        data-category="${cat.category}"
+                        data-id="${cat.id}"
+                        data-active="${isFirst ? 'true' : 'false'}">
+                    <i class="bi ${cat.icon}"></i> ${cat.category}
+                </button>`;
         }
-    };
-</script>
 
-<script>
-    const CATEGORIES = @json($categories);
-    const ITEMS = @json($items);
-    const categoryContainer = document.querySelector('.category-scroll');        
-
-    CATEGORIES.forEach((cat, index) => {
-        const categoryHTML = addCategory(cat.category, cat.id, cat.icon);
-
-        categoryContainer.insertAdjacentHTML('beforeend', categoryHTML);
-
-        // Add class to first item AFTER rendering
-        if (index === 0) {
-            const firstEl = categoryContainer.querySelector('.category-wrapper');
-            if (firstEl) {
-                firstEl.querySelector('.categoryButton')
-                    .classList.add('btn-theme');
-                firstEl.querySelector('.categoryButton')
-                    .classList.add('text-white');
-
-                firstEl.setAttribute('data-active', 'true');
-            }
-        }
-    });
-
-    function addCategory(category, id, icon) {
-        return `
-            <div class="category-wrapper category-buttons"
-                data-category="${category}"
-                data-id="${id}">
-
-                <button
-                    data-category="${category}"
-                    data-id="${id}"
-                    class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill">
-
-                    <i class="bi ${icon} me-1 opacity-50"></i>
-                    ${category}
-                </button>
-
-            </div>
-        `;
-    }
-
-    const categoryButtons = document.querySelectorAll('.categoryButton');
-    const itemContainer = document.querySelector('.item-scroll');
-
-    // detect active category (fallback to first button if none marked active)
-    let activeCategory =
-        [...categoryButtons].find(btn => btn.dataset.active === "true")?.dataset.category
-        || categoryButtons[0]?.dataset.category;
-
-    // render function (clean + reusable)
-    function renderItems(category) {
-        if (!category) return;
-
-        itemContainer.innerHTML = "";
-
-        ITEMS
-            .filter(item => item.category === category)
-            .forEach(item => {
-                itemContainer.appendChild(
-                    createItemCard(item.id, item.category, item.name, item.price)
-                );
-            });
-
-        const itemButtons = document.querySelectorAll('.item-wrapper');
-        itemButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                addToCart(btn)
-            });
-
+        CATEGORIES.forEach((cat, index) => {
+            categoryRail.insertAdjacentHTML('beforeend', categoryButtonHtml(cat, index === 0));
         });
-    }
 
-    // initial render
-    renderItems(activeCategory);
+        function menuItemCard(item) {
+            const card = document.createElement('div');
+            card.className = 'menu-item';
+            card.tabIndex = 0;
+            card.dataset.id = item.id;
+            card.dataset.category = item.category;
+            card.dataset.name = item.name;
+            card.dataset.price = item.price;
 
-    // card builder
-    function createItemCard(id, category, name, price) {
-        const col = document.createElement('div');
-        col.className = 'col-md-4 col-sm-6 item-wrapper';
-        col.dataset.id = id;
-        col.dataset.category = category;
-        col.dataset.name = name;
-        col.dataset.price = price;
-
-        const card = document.createElement('div');
-        card.className = 'card item-card h-100 p-3';
-
-        const title = document.createElement('h6');
-        title.className = 'fw-bold mb-1';
-        title.textContent = name;
-
-        const categoryEl = document.createElement('p');
-        categoryEl.className = 'text-muted small mb-3';
-        categoryEl.textContent = category;
-
-        const priceEl = document.createElement('div');
-        priceEl.className = 'mt-auto fw-bold primary-text-color';
-        priceEl.style.color = 'var(--theme-primary)';
-        priceEl.textContent = `$${price}`;
-
-        card.appendChild(title);
-        card.appendChild(categoryEl);
-        card.appendChild(priceEl);
-        col.appendChild(card);
-
-        return col;
-    }
-
-    // optional: category switching (click buttons)
-    categoryButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            categoryButtons.forEach(b => {
-                b.dataset.active = "false";
-                b.classList.remove('btn-theme');
-                b.classList.remove('text-white');
-            });
-            btn.dataset.active = "true";
-            btn.classList.add('btn-theme');
-            btn.classList.add('text-white');
-
-            renderItems(btn.dataset.category);
-        });
-    });
-
-</script>
-<script>
-    function addToCart(btn) {
-        const cartList = document.querySelector('.cartList');
-        
-        // 1. Get Item Data
-        const name = btn.dataset.name;
-        const price = parseFloat(btn.dataset.price);
-        const category = btn.dataset.category;
-
-        // 2. Check if item already exists in the cart
-        const existingItems = Array.from(cartList.querySelectorAll('.order-item'));
-        const existingItem = existingItems.find(item => item.querySelector('h6').textContent === name);
-
-        if (existingItem) {
-            // Update existing quantity
-            const input = existingItem.querySelector('.quality-Inputs');
-            input.value = parseInt(input.value) + 1;
-            updateItemTotal(existingItem, price);
-            totalAllCart();
-        } else {
-            // Create new element
-            const newItem = document.createElement('div');
-            newItem.className = 'order-item mb-3';
-            newItem.setAttribute('data-category', category);
-            newItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2" >
-                    <div>
-                        <h6 class="mb-0">${name}</h6>
-                        <small class="text-muted">$${price.toFixed(2)} each</small>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm text-danger p-0 delete-btn"><i class="bi bi-trash"></i></button>
-                        </br>
-                        <small>${category}</small>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="btn-group btn-group-sm border rounded">
-                        <button class="btn btn-light bg-white border-0 minus-btn">-</button>
-                        <input class="quality-Inputs border-0 text-center" style="width: 30px" type="text" value="1" readonly>
-                        <button class="btn btn-light bg-white border-0 plus-btn">+</button>
-                    </div>
-                    <span class="fw-bold item-total" style="color: var(--theme-primary);">$${price.toFixed(2)}</span>
-                </div>
+            card.innerHTML = `
+                <div class="name">${item.name}</div>
+                <div class="category">${item.category}</div>
+                <div class="price">₱${Number(item.price).toFixed(2)}</div>
             `;
 
-            // Add event listeners for the buttons inside the new item
-            attachEventListeners(newItem, price);
-            
-            cartList.appendChild(newItem);
-            totalAllCart();
-        }
-    }
-
-    // Helper to update prices
-    function updateItemTotal(element, price) {
-        const input = element.querySelector('.quality-Inputs');
-        const totalSpan = element.querySelector('.item-total');
-        const newQty = parseInt(input.value);
-        totalSpan.textContent = `$${(newQty * price).toFixed(2)}`;
-    }
-
-    // Helper to handle button logic
-    function attachEventListeners(element, price) {
-        element.querySelector('.plus-btn').addEventListener('click', () => {
-            const input = element.querySelector('.quality-Inputs');
-            input.value = parseInt(input.value) + 1;
-            updateItemTotal(element, price);
-            totalAllCart();
-        });
-
-        element.querySelector('.minus-btn').addEventListener('click', () => {
-            const input = element.querySelector('.quality-Inputs');
-            if (parseInt(input.value) > 1) {
-                input.value = parseInt(input.value) - 1;
-                updateItemTotal(element, price);
-                totalAllCart();
-            }
-        });
-
-        element.querySelector('.delete-btn').addEventListener('click', () => {
-            element.remove();
-            totalAllCart();
-        });
-    }
-    
-    function totalAllCart() {
-        const cartTotal = document.querySelector('.cartTotal');
-        const allItemTotals = document.querySelectorAll('.item-total');
-        
-        let total = 0;
-
-        allItemTotals.forEach(item => {
-            // Remove '$', convert to float, and add to running total
-            const price = parseFloat(item.textContent.replace('$', ''));
-            if (!isNaN(price)) {
-                total += price;
-            }
-        });
-
-        // Update the UI
-        cartTotal.textContent = `$${total.toFixed(2)}`;
-    }
-
-    function clearCart() {
-        // 1. Remove all items
-        const items = document.querySelectorAll('.order-item');
-        items.forEach(item => {
-            console.log(item.dataset.category)
-            item.remove();
-        });
-
-        // 2. Reset the total display
-        const cartTotal = document.querySelector('.cartTotal');
-        if (cartTotal) {
-            cartTotal.textContent = "$0.00";
-        }
-    }
-    
-    const btn = document.querySelector('.clearCartBtn');
-    btn.addEventListener('click', clearCart);
-    </script>
-    <script>
-        const submitCartBtn = document.querySelector('.submitCart');
-        submitCartBtn.addEventListener('click', saveCart);
-        
-        async function saveCart() {
-            const items = document.querySelectorAll('.order-item');
-            const cartData = []; 
-
-            // Extracting data from each item
-            items.forEach(item => {
-                const orderName = document.querySelector('.orderNameInput').value;
-                const name = item.querySelector('h6').textContent;
-                const quantity = item.querySelector('.quality-Inputs').value;
-                const category = item.dataset.category;
-                const price = item.querySelector('.item-total').textContent.replace('$', '');
-                
-                cartData.push({
-                    name: name,
-                    quantity: parseInt(quantity),
-                    category: category,
-                    price: parseFloat(price),
-                    orderName: orderName
-                });
+            card.addEventListener('click', () => addToCart(card));
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(card); }
             });
 
-            // Don't submit if cart is empty
-            if (cartData.length === 0) {
-                alert("Your cart is empty!");
+            return card;
+        }
+
+        function renderItems(category) {
+            if (!category) return;
+            itemGrid.innerHTML = '';
+            ITEMS.filter(item => item.category === category)
+                 .forEach(item => itemGrid.appendChild(menuItemCard(item)));
+        }
+
+        function setActiveCategory(button) {
+            categoryRail.querySelectorAll('.category-btn').forEach(b => b.dataset.active = 'false');
+            button.dataset.active = 'true';
+            renderItems(button.dataset.category);
+        }
+
+        categoryRail.addEventListener('click', (e) => {
+            const btn = e.target.closest('.category-btn');
+            if (!btn) return;
+            setActiveCategory(btn);
+        });
+
+        const initialCategory = CATEGORIES[0]?.category;
+        renderItems(initialCategory);
+    </script>
+
+    <script>
+        /* ---------------- Cart ---------------- */
+        const cartList = document.querySelector('.cart-list');
+        const cartTotalEl = document.querySelector('.cartTotal');
+
+        function cartEmptyHtml() {
+            return `<div class="cart-empty"><i class="bi bi-cup"></i><span>No items yet — tap something from the menu</span></div>`;
+        }
+
+        function ensureCartNotEmpty() {
+            const empty = cartList.querySelector('.cart-empty');
+            if (empty) empty.remove();
+        }
+
+        function restoreCartEmptyIfNeeded() {
+            if (!cartList.querySelector('.order-item')) {
+                cartList.innerHTML = cartEmptyHtml();
+            }
+        }
+
+        function addToCart(itemEl) {
+            const name = itemEl.dataset.name;
+            const price = parseFloat(itemEl.dataset.price);
+            const category = itemEl.dataset.category;
+
+            const existing = Array.from(cartList.querySelectorAll('.order-item'))
+                .find(row => row.dataset.name === name);
+
+            if (existing) {
+                const input = existing.querySelector('.qty-input');
+                input.value = parseInt(input.value) + 1;
+                updateItemTotal(existing, price);
+                totalAllCart();
                 return;
             }
 
-            loadKitchenOrders();
-            
+            ensureCartNotEmpty();
+
+            const row = document.createElement('div');
+            row.className = 'receipt-line order-item';
+            row.dataset.category = category;
+            row.dataset.name = name;
+
+            row.innerHTML = `
+                <div class="receipt-row">
+                    <span class="item-name">${name}</span>
+                    <span class="leader"></span>
+                    <span class="item-total">₱${price.toFixed(2)}</span>
+                </div>
+                <div class="receipt-meta">
+                    <span class="category-tag">${category}</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="qty-stepper">
+                            <button class="minus-btn" type="button">−</button>
+                            <input class="qty-input" type="text" value="1" readonly>
+                            <button class="plus-btn" type="button">+</button>
+                        </div>
+                        <button class="delete-btn" type="button"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            `;
+
+            attachRowEvents(row, price);
+            cartList.appendChild(row);
+            totalAllCart();
+        }
+
+        function updateItemTotal(row, price) {
+            const qty = parseInt(row.querySelector('.qty-input').value);
+            row.querySelector('.item-total').textContent = `₱${(qty * price).toFixed(2)}`;
+        }
+
+        function attachRowEvents(row, price) {
+            row.querySelector('.plus-btn').addEventListener('click', () => {
+                const input = row.querySelector('.qty-input');
+                input.value = parseInt(input.value) + 1;
+                updateItemTotal(row, price);
+                totalAllCart();
+            });
+
+            row.querySelector('.minus-btn').addEventListener('click', () => {
+                const input = row.querySelector('.qty-input');
+                if (parseInt(input.value) > 1) {
+                    input.value = parseInt(input.value) - 1;
+                    updateItemTotal(row, price);
+                    totalAllCart();
+                }
+            });
+
+            row.querySelector('.delete-btn').addEventListener('click', () => {
+                row.remove();
+                restoreCartEmptyIfNeeded();
+                totalAllCart();
+            });
+        }
+
+        function totalAllCart() {
+            const total = Array.from(cartList.querySelectorAll('.item-total'))
+                .reduce((sum, el) => sum + (parseFloat(el.textContent.replace('₱', '')) || 0), 0);
+            cartTotalEl.textContent = `₱${total.toFixed(2)}`;
+        }
+
+        function clearCart() {
+            cartList.querySelectorAll('.order-item').forEach(row => row.remove());
+            restoreCartEmptyIfNeeded();
+            cartTotalEl.textContent = '₱0.00';
+        }
+
+        document.querySelector('.clearCartBtn').addEventListener('click', clearCart);
+    </script>
+
+    <script>
+        /* ---------------- Submit order ---------------- */
+        const submitCartBtn = document.querySelector('.submitCart');
+        submitCartBtn.addEventListener('click', saveCart);
+
+        async function saveCart() {
+            const rows = document.querySelectorAll('.order-item');
+            const orderName = document.querySelector('.orderNameInput').value;
+
+            const cartData = Array.from(rows).map(row => ({
+                name: row.dataset.name,
+                quantity: parseInt(row.querySelector('.qty-input').value),
+                category: row.dataset.category,
+                price: parseFloat(row.querySelector('.item-total').textContent.replace('₱', '')) / parseInt(row.querySelector('.qty-input').value),
+                orderName,
+            }));
+
+            if (cartData.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+
+            submitCartBtn.disabled = true;
+            submitCartBtn.textContent = 'Sending…';
+
             try {
-                // Send to your backend API endpoint
-                const response = await api.post('/cart/checkout', { items: cartData });
+                await api.post('/cart/checkout', { items: cartData });
                 clearCart();
-                document.querySelector('.orderNameInput').value = "";
+                document.querySelector('.orderNameInput').value = '';
+                loadKitchenOrders();
             } catch (error) {
                 if (error.response) {
                     console.error('Server Error Data:', error.response.data);
@@ -564,87 +743,74 @@
                 } else {
                     console.error('Failed to save cart:', error);
                 }
-                }
+                alert('Something went wrong sending the order. Please try again.');
+            } finally {
+                submitCartBtn.disabled = false;
+                submitCartBtn.textContent = 'Send to kitchen';
             }
+        }
     </script>
+
     <script>
+        /* ---------------- Active kitchen orders ---------------- */
+        const kitchenList = document.querySelector('.kitchen-list');
+
+        function kitchenEmptyHtml() {
+            return `<div class="kitchen-empty"><i class="bi bi-inbox"></i><span>No active orders right now</span></div>`;
+        }
+
         function createOrderCard(order) {
-            // 1. Determine status configuration
             const isPreparing = order.status.toLowerCase() === 'preparing';
-            const badgeClass = isPreparing ? 'bg-warning text-dark' : 'bg-success';
-            const opacityClass = isPreparing ? '' : 'opacity-75';
-            
-            // 2. Generate the items list elements safely
+
             const itemsListHtml = order.items.map(item => `
                 <li>${item.count || item.quantity}x ${item.name}</li>
             `).join('');
 
-            // 3. Generate the action button based on current status
-            const actionButtonHtml = isPreparing 
-                ? `<button class="btn btn-sm btn-warning w-100 fw-bold btn-mark-ready" data-order-name="${order.name}">
-                    <i class="bi bi-check2-circle me-1"></i> Mark as Ready
-                </button>`
-                : `<button class="btn btn-sm btn-outline-secondary w-100 btn-complete-clear" data-order-name="${order.name}">
-                    Complete & Clear
-                </button>`;
+            const actionButtonHtml = isPreparing
+                ? `<button class="ticket-action ticket-action--ready btn-mark-ready" data-order-name="${order.name}">
+                        <i class="bi bi-check2-circle me-1"></i> Mark as ready
+                   </button>`
+                : `<button class="ticket-action ticket-action--clear btn-complete-clear" data-order-name="${order.name}">
+                        Complete &amp; clear
+                   </button>`;
 
-            // 4. Create the parent card element wrapper
-            const cardElement = document.createElement('div');
-            cardElement.className = `card mb-3 border-0 shadow-sm ${opacityClass}`;
-            cardElement.setAttribute('data-order-id', order.name);
+            const card = document.createElement('div');
+            card.className = `ticket ${isPreparing ? 'ticket--preparing' : 'ticket--ready'}`;
+            card.setAttribute('data-order-id', order.name);
 
-            // 5. Inject the layout template
-            cardElement.innerHTML = `
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge ${badgeClass}">${order.status}</span>
-                        <span class="text-muted small">${order.timeAgo}</span>
-                    </div>
-                    <h6 class="fw-bold">Order: ${order.name}</h6>
-                    <ul class="list-unstyled small mb-3">
-                        ${itemsListHtml}
-                    </ul>
-                    ${actionButtonHtml}
+            card.innerHTML = `
+                <div class="ticket-top">
+                    <span class="status-tag ${isPreparing ? 'status-tag--preparing' : 'status-tag--ready'}">${order.status}</span>
+                    <span class="time-ago">${order.timeAgo}</span>
                 </div>
+                <h6 class="ticket-name">Order: ${order.name}</h6>
+                <ul class="ticket-items">${itemsListHtml}</ul>
+                ${actionButtonHtml}
             `;
 
-            return cardElement;
+            return card;
         }
 
         async function loadKitchenOrders() {
             try {
-                // 2. CRITICAL: Add the 'await' keyword here so JS pauses until the server answers
                 const response = await api.get('/get/queue');
-                console.log(response);
-                
-                // Grab your payload wrapper (Axios packages the response in a 'data' property)
-                // If your Laravel API returns json(['data' => ...]), your array lives in response.data.data
-                const ordersArray = response.data.data || response.data;
-                
-                const container = document.querySelector('.pos-panel-list');
-                if (!container) {
-                    console.error("Container '.pos-panel-list' not found in the DOM.");
+                const ordersArray = response.data?.data || response.data || [];
+
+                kitchenList.innerHTML = '';
+
+                if (ordersArray.length === 0) {
+                    kitchenList.innerHTML = kitchenEmptyHtml();
                     return;
                 }
-                
-                container.innerHTML = ''; // Clear old static entries
 
-                // Loop through the nested data array safely
                 ordersArray.forEach(order => {
-                    
-                    // Format data to match what your element builder expects
                     const formattedOrder = {
-                        name: order.order_name || order.name, // Adjust based on your schema column name
-                        status: order.status,          
-                        timeAgo: "Just now",           // You can calculate actual time from order.created_at
-                        items: order.items || []       // Fallback to empty array if no items found
+                        name: order.order_name || order.name,
+                        status: order.status,
+                        timeAgo: 'Just now',
+                        items: order.items || [],
                     };
-
-                    // Build the DOM element card
-                    const card = createOrderCard(formattedOrder);
-                    
-                    // Append it directly to the dashboard
-                    container.appendChild(card);
+                    kitchenList.appendChild(createOrderCard(formattedOrder));
                 });
             } catch (error) {
                 if (error.response) {
@@ -656,44 +822,34 @@
             }
         }
 
-        const posContainerList = document.querySelector('.pos-panel-list');
-
-        // Added 'async' right here 
-        posContainerList.addEventListener('click', async (event) => {
+        kitchenList.addEventListener('click', async (event) => {
             const button = event.target.closest('.btn-mark-ready, .btn-complete-clear');
-            
-            if (!button) return; // If they didn't click a button, do nothing
+            if (!button) return;
 
             const orderName = button.getAttribute('data-order-name');
+            const originalLabel = button.textContent;
 
             try {
-                // Disable the button immediately so the user can't double-click it while waiting
                 button.disabled = true;
-                button.innerText = "Processing...";
+                button.textContent = 'Processing…';
 
-                // 3. Route the request based on which button was clicked
                 if (button.classList.contains('btn-mark-ready')) {
-                    
-                    // Calling a POST or PUT endpoint to update status
-                    const response = await api.update(`/api/orders/${orderName}/ready`, { status: 'ready' });
+                    await api.update(`/api/orders/${orderName}/ready`, { status: 'ready' });
                 } else if (button.classList.contains('btn-complete-clear')) {
-                    
-                    // Calling a DELETE endpoint to clear the order
-                    const response = await api.delete(`/api/orders/${orderName}/remove`);
+                    await api.delete(`/api/orders/${orderName}/remove`);
                 }
 
                 loadKitchenOrders();
             } catch (error) {
                 console.error('API call failed:', error);
-                
-                // Error handling fallback: re-enable the button if the network request fails
                 button.disabled = false;
-                button.innerText = button.classList.contains('btn-mark-ready') ? "Mark as Ready" : "Complete & Clear";
+                button.textContent = originalLabel;
                 alert('Something went wrong. Please try again.');
             }
         });
 
         loadKitchenOrders();
     </script>
-    
+
+</body>
 </html>

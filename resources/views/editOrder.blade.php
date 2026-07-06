@@ -4,476 +4,662 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Cafelina - Live Menu Editor</title>
+    <title>Cafelina — Live Menu Editor</title>
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<style>
-        /* Custom Cafelina Theme */
+    <style>
+        /* ============================================================
+           Cafelina editor — same token system as the POS and the
+           order board. The two preview panels are built to look like
+           true miniatures of those screens, so a change here reads as
+           WYSIWYG rather than an abstract "preview" label.
+           ============================================================ */
         :root {
-            --theme-bg: #FFEAC5;
-            --theme-accent-light: #FFDBB5;
-            --theme-primary: #6C4E31;
-            --theme-dark: #603F26;
+            --paper: #F7EFE0;
+            --paper-warm: #EAD9B7;
+            --ink: #2E1D14;
+            --ink-soft: #6B5647;
+            --espresso: #40291B;
+            --caramel: #C6863B;
+            --caramel-deep: #A4692A;
+            --caramel-tint: #F6E7C9;
+            --moss: #3F6B4C;
+            --moss-deep: #2E5038;
+            --moss-tint: #E1EBE0;
+            --stamp: #A8432E;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            background-color: var(--theme-bg);
-            color: var(--theme-dark);
+            background-color: var(--paper);
+            color: var(--ink);
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Editor Top Bar */
+        h1, h2, h3, h4, h5, h6 { font-family: 'Fraunces', serif; }
+
+        /* ---------------- Top bar ---------------- */
         .editor-header {
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(64, 41, 27, 0.06);
+            padding: 14px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             z-index: 10;
         }
 
-        /* Reusable Panel Styling */
-        .pos-panel {
-            background-color: #ffffff;
-            border-radius: 12px;
-            height: calc(100vh - 90px); /* Adjusted for editor header */
-            overflow-y: auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            padding: 20px;
+        .exit-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1.5px solid var(--paper-warm);
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-right: 14px;
+        }
+        .exit-link:hover { border-color: var(--caramel); color: var(--caramel-deep); }
+
+        .editor-title {
+            font-weight: 600;
+            font-size: 1.15rem;
+            color: var(--caramel-deep);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ---------------- Shell ---------------- */
+        .editor-shell {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.8fr 1fr 1fr;
+            gap: 16px;
+            padding: 16px;
+            min-height: 0;
+        }
+
+        @media (max-width: 992px) {
+            .editor-shell { grid-template-columns: 1fr; overflow-y: auto; }
+            body { overflow: auto; }
+        }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(64, 41, 27, 0.06);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
             position: relative;
         }
 
-        /* Preview State for Grids 2 & 3 */
-        .preview-panel {
-            opacity: 0.7;
-            pointer-events: none; /* Prevents clicking on the preview areas */
+        .panel--canvas {
+            border: 2px solid var(--caramel);
+        }
+
+        .panel-title { font-weight: 600; font-size: 1.15rem; margin: 0 0 2px; }
+        .panel-sub { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 4px; }
+
+        /* Preview panels: miniature, inert copies of the real screens */
+        .panel--preview {
+            opacity: 0.75;
+            pointer-events: none;
         }
         .preview-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: var(--theme-dark);
+            top: 12px;
+            right: 12px;
+            background: var(--espresso);
             color: #fff;
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 5;
-            letter-spacing: 0.5px;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
             text-transform: uppercase;
+            padding: 4px 9px;
+            border-radius: 999px;
         }
 
-        /* Custom Buttons */
-        .btn-theme {
-            background-color: var(--theme-primary);
-            color: #fff !important;
-            border: none;
-        }
-        .btn-theme:hover { background-color: var(--theme-dark); color: #fff; }
-        .btn-outline-theme {
-            color: var(--theme-primary);
-            border-color: var(--theme-primary);
-        }
-        .btn-outline-theme:hover { background-color: var(--theme-primary); color: #fff; }
-
-        /* Category Scroll & Editing */
+        /* ---------------- Category rail ---------------- */
         .category-scroll {
+            display: flex;
+            gap: 8px;
             overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 10px;
+            padding: 16px 2px 10px;
             min-height: 55px;
         }
+        .category-scroll::-webkit-scrollbar { height: 5px; }
+        .category-scroll::-webkit-scrollbar-thumb { background: var(--paper-warm); border-radius: 4px; }
+
         .category-wrapper {
-            display: inline-block;
             position: relative;
+            flex: 0 0 auto;
             cursor: grab;
         }
         .category-wrapper:active { cursor: grabbing; }
-        
-        /* Delete badge for categories */
+
+        .categoryButton {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 999px;
+            border: 1.5px solid var(--caramel);
+            background: transparent;
+            color: var(--caramel-deep);
+            font-weight: 600;
+            font-size: 0.92rem;
+            white-space: nowrap;
+            cursor: grab;
+        }
+        .categoryButton.btn-theme {
+            background: var(--caramel);
+            color: #fff;
+            border-color: var(--caramel);
+        }
+
         .delete-cat-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -6px;
+            right: -6px;
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background-color: #dc3545;
-            color: white;
+            background: var(--stamp);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 12px;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease;
             z-index: 5;
         }
         .category-wrapper:hover .delete-cat-badge { opacity: 1; }
 
-        /* Item Card & Editing Overlays */
+        .add-category-btn {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 999px;
+            border: 2px dashed var(--caramel);
+            background: transparent;
+            color: var(--caramel-deep);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .add-category-btn:hover { background: var(--caramel-tint); }
+
+        /* ---------------- Item grid ---------------- */
+        .item-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 14px;
+            align-content: start;
+            padding: 4px 4px 4px 0;
+        }
+
+        .categoryItems.d-none { display: none; }
+
         .item-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            transition: all 0.2s ease;
             position: relative;
+            border: 1.5px solid var(--paper-warm);
+            border-radius: 12px;
+            padding: 16px;
+            height: 100%;
+            background: #fff;
             cursor: grab;
+            transition: border-color 0.2s ease;
         }
         .item-card:active { cursor: grabbing; }
-        
-        /* Edit Actions Overlay */
+        .item-card:hover { border-color: var(--caramel); }
+
+        .item-card .name { font-weight: 600; font-size: 1.02rem; margin-bottom: 2px; }
+        .item-card .category { font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 14px; }
+        .item-card .price {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--caramel-deep);
+        }
+
         .item-actions {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             opacity: 0;
             transition: opacity 0.2s ease;
-            z-index: 2;
         }
         .item-card:hover .item-actions { opacity: 1; }
-        .item-card:hover { border-color: var(--theme-primary); }
 
-        /* Add New Card */
+        .icon-circle-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+        }
+        .icon-circle-btn.edit-item-btn { background: var(--caramel-deep); }
+        .icon-circle-btn.edit-item-btn:hover { background: var(--espresso); }
+        .icon-circle-btn.delete-item-btn { background: var(--stamp); }
+        .icon-circle-btn.delete-item-btn:hover { background: #7c2e1f; }
+
         .add-new-card {
-            border: 2px dashed var(--theme-primary);
-            background-color: transparent;
-            color: var(--theme-primary);
+            border: 2px dashed var(--caramel);
+            background: transparent;
+            color: var(--caramel-deep);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 120px;
+            border-radius: 12px;
+            font-weight: 700;
         }
-        .add-new-card:hover {
-            background-color: rgba(108, 78, 49, 0.05);
-        }
+        .add-new-card:hover { background: var(--caramel-tint); }
 
-        /* Sortable Ghost Styles */
+        /* SortableJS ghost state */
         .sortable-ghost-cat { opacity: 0.3; }
         .sortable-ghost-item {
             opacity: 0.4;
-            background-color: var(--theme-accent-light);
-            border: 2px dashed var(--theme-primary);
+            background: var(--caramel-tint);
+            border: 2px dashed var(--caramel) !important;
         }
 
-                /* Icon Picker Styles */
+        /* ---------------- Icon picker (inside Add Category modal) ---------------- */
+        .icon-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 14px;
+            background: var(--paper);
+            border-radius: 10px;
+            border: 1px solid var(--paper-warm);
+        }
         .icon-option {
-            width: 45px;
-            height: 45px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             cursor: pointer;
             border-radius: 8px;
             border: 2px solid transparent;
-            transition: all 0.2s;
-            background-color: #f8f9fa;
-            color: var(--theme-dark);
+            background: #fff;
+            color: var(--ink-soft);
+            transition: all 0.15s ease;
         }
-
-        .icon-option:hover {
-            background-color: var(--theme-accent-light);
-        }
-
+        .icon-option:hover { background: var(--caramel-tint); }
         .icon-option.active {
-            border-color: var(--theme-primary);
-            background-color: var(--theme-accent-light);
-            color: var(--theme-primary);
+            border-color: var(--caramel);
+            background: var(--caramel-tint);
+            color: var(--caramel-deep);
         }
 
-        .border-dashed {
-            border-style: dashed !important;
+        /* ---------------- Preview: order panel (mini receipt) ---------------- */
+        .mini-order-name {
+            background: var(--paper);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: var(--ink-soft);
+            font-style: italic;
+            margin-bottom: 14px;
         }
+        .mini-receipt-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            border-bottom: 1px dashed var(--paper-warm);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .mini-receipt-row .name { font-weight: 600; font-size: 0.92rem; white-space: nowrap; }
+        .mini-receipt-row .leader { flex: 1; border-bottom: 2px dotted var(--ink-soft); opacity: 0.35; transform: translateY(-4px); }
+        .mini-receipt-row .price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--caramel-deep); white-space: nowrap; }
+
+        .mini-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px dashed var(--paper-warm);
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+        .mini-total-row .label { font-weight: 600; }
+        .mini-total-row .value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--caramel-deep); }
+
+        .mini-submit-btn {
+            width: 100%;
+            margin-top: 12px;
+            border: none;
+            background: var(--espresso);
+            color: #fff;
+            font-weight: 700;
+            padding: 11px;
+            border-radius: 10px;
+            opacity: 0.5;
+        }
+
+        /* ---------------- Preview: kitchen panel (mini ticket) ---------------- */
+        .panel--kitchen-preview { background: var(--caramel-tint); }
+
+        .mini-ticket {
+            background: #fff;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .mini-status-tag {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: var(--caramel-deep);
+            color: #fff;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+        .mini-ticket .name { font-weight: 600; font-size: 0.95rem; margin: 8px 0 4px; }
+        .mini-ticket .note { font-size: 0.8rem; color: var(--ink-soft); }
+
+        /* ---------------- Modals ---------------- */
+        .modal-content { border: none; border-radius: 14px; overflow: hidden; }
+        .modal-header {
+            background: var(--espresso);
+            color: #fff;
+            border: none;
+        }
+        .modal-header .modal-title { font-weight: 600; }
+        .modal-body, .modal-footer { background: var(--paper); border: none; }
+        .modal-footer { border-top: 1px solid var(--paper-warm) !important; }
+
+        .form-label {
+            font-weight: 700;
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+        .form-control, .input-group-text {
+            border: none;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(64, 41, 27, 0.08);
+        }
+        .form-control:focus { box-shadow: 0 0 0 2px var(--caramel); }
+
+        .btn-theme {
+            background: var(--caramel);
+            border: none;
+            color: #fff !important;
+            font-weight: 700;
+        }
+        .btn-theme:hover { background: var(--caramel-deep); color: #fff; }
+        .btn-outline-secondary {
+            border-color: var(--paper-warm);
+            color: var(--ink-soft);
+        }
+        .btn-outline-secondary:hover { background: var(--paper-warm); color: var(--ink); }
+        .btn-danger { background: var(--stamp); border: none; }
+        .btn-danger:hover { background: #7c2e1f; }
     </style>
 </head>
 <body>
 
-    <div class="editor-header p-3 d-flex justify-content-between align-items-center mb-2">
+    <div class="editor-header">
         <div class="d-flex align-items-center">
-            <a href="{{ route('home') }}" class="btn btn-outline-secondary me-3 btn-sm" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
-            <h5 class="mb-0 fw-bold" style="color: var(--theme-primary);"><i class="bi bi-magic me-2"></i>Live Menu Editor</h5>
+            <a href="{{ route('home') }}" class="exit-link" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
+            <h5 class="editor-title"><i class="bi bi-magic"></i>Live Menu Editor</h5>
         </div>
     </div>
 
-    <div class="container-fluid flex-grow-1 px-3 pb-3">
-        <div class="row g-3 h-100">
-            
-            <div class="col-lg-6 col-md-12 h-100">
-                <div class="pos-panel d-flex flex-column border border-2" style="border-color: var(--theme-primary) !important;">
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h4 class="mb-1 fw-bold">Menu Canvas</h4>
-                            <p class="text-muted small mb-0">Drag to reorder. Hover to edit or delete.</p>
-                        </div>
+    <div class="editor-shell">
+
+        <section class="panel panel--canvas">
+            <h4 class="panel-title">Menu Canvas</h4>
+            <p class="panel-sub">Drag to reorder. Hover a card to edit or delete.</p>
+
+            <div class="category-scroll" id="categorySortable">
+
+                @if($firstCategory)
+                    <div class="category-wrapper" data-category="{{ $firstCategory->category }}" data-id="{{ $firstCategory->id }}">
+                        <button data-category="{{ $firstCategory->category }}" data-id="{{ $firstCategory->id }}" class="categoryButton btn-theme">
+                            <i class="bi {{ $firstCategory->icon }}"></i>
+                            {{ $firstCategory->category }}
+                        </button>
+                        <div class="delete-cat-badge delete-category-btn"><i class="bi bi-x"></i></div>
                     </div>
+                @endif
 
-                    <div class="category-scroll mb-4 pt-4 d-flex gap-2" id="categorySortable">
-                        
-                        @if($firstCategory)
-                            <div class="category-wrapper" data-category="{{ $firstCategory->category }}" data-id="{{ $firstCategory->id }}">
-                                <button
-                                    data-category="{{ $firstCategory->category }}"
-                                    class="categoryButton btn btn-theme btn-outline-theme px-4 py-2 rounded-pill">
-
-                                    <i class="bi {{ $firstCategory->icon }} me-1 opacity-50"></i>
-                                    {{ $firstCategory->category }}
-
-                                </button>
-
-                                <div class="delete-cat-badge delete-category-btn">
-                                    <i class="bi bi-x"></i>
-                                </div>
-                            </div>
-                        @endif
-
-                        @foreach($categories as $category)
-                        <div class="category-wrapper" data-category="{{$category->category}}" data-id="{{ $category->id }}">
-                            
-                            <button data-category="{{$category->category}}" data-id="{{ $category->id }}" class="categoryButton btn btn-outline-theme px-4 py-2 rounded-pill"><i class="bi {{ $category->icon }} me-1 opacity-50"></i>{{ $category->category }}</button>
-                            <div class="delete-cat-badge delete-category-btn"><i class="bi bi-x"></i></div>
-                        </div>
-                        @endforeach
-
-                        <button class="btn btn-light text-primary border-dashed px-3 py-2 rounded-pill fw-bold" 
-                              style="border: 2px dashed var(--theme-primary);"
-                              data-bs-toggle="modal" 
-                              data-bs-target="#addCategoryModal">
-                          <i class="bi bi-plus-lg me-1"></i> Add Category
-                      </button>
-
-                    </div>
-
-                    @php
-                        $firstCategory = $firstCategory->category ?? null;
-                    @endphp
-
-                    <div class="row g-3 overflow-auto flex-grow-1 align-content-start" id="itemSortable">
-
-                    @foreach($items as $item)
-                        <div class="col-md-4 col-sm-6 categoryItems
-                            {{ $item->category !== $firstCategory ? 'd-none' : '' }}"
-                            data-id="{{ $item->id }}"
-                            data-category="{{ $item->category }}">
-
-                            <div class="card item-card h-100 p-3">
-                                <h6 class="fw-bold mb-1" id="itemChangedName">{{ $item->name }}</h6>
-                                <p class="text-muted small mb-3">{{ $item->category }}</p>
-
-                                <div class="mt-auto fw-bold text-primary" id="itemChangedPrice"
-                                    style="color: var(--theme-primary) !important;">
-                                    ₱{{ $item->price }}
-                                </div>
-                                
-                                <div class="item-actions shadow-sm">
-                                    <!-- Added 'edit-item-btn' here -->
-                                    <button class="btn btn-sm btn-primary rounded-circle edit-item-btn">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <!-- We'll add 'delete-item-btn' here early for later -->
-                                    <button class="btn btn-sm btn-danger rounded-circle delete-item-btn">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-
-                        <div class="col-md-4 col-sm-6 ignore-drag" 
-                          data-bs-toggle="modal" 
-                          data-bs-target="#addItemModal">
-                        <div class="card item-card add-new-card h-100 p-3">
-                            <div class="text-center">
-                                <i class="bi bi-plus-circle fs-3 d-block mb-1"></i>
-                                <span class="fw-bold">Add Item</span>
-                            </div>
-                        </div>
-                        </div>
-
-                    </div>
+                @foreach($categories as $category)
+                <div class="category-wrapper" data-category="{{ $category->category }}" data-id="{{ $category->id }}">
+                    <button data-category="{{ $category->category }}" data-id="{{ $category->id }}" class="categoryButton">
+                        <i class="bi {{ $category->icon }}"></i>{{ $category->category }}
+                    </button>
+                    <div class="delete-cat-badge delete-category-btn"><i class="bi bi-x"></i></div>
                 </div>
+                @endforeach
+
+                <button class="add-category-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="bi bi-plus-lg"></i> Add category
+                </button>
             </div>
 
-            <div class="col-lg-3 col-md-6 h-100">
-                <div class="pos-panel preview-panel d-flex flex-column">
-                    <div class="preview-badge"><i class="bi bi-eye me-1"></i>Preview</div>
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
-                        <h5 class="fw-bold mb-0">Current Order</h5>
-                        <span class="text-muted small">Clear</span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-control bg-light border-0 text-muted">Enter order name...</div>
-                    </div>
-                    <div class="flex-grow-1 overflow-auto">
-                        <div class="border-bottom border-light pb-2 mb-2">
-                            <h6 class="mb-0">Latte</h6>
-                            <div class="d-flex justify-content-between text-muted small mt-1">
-                                <span>1x</span>
-                                <span>₱4.75</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="border-top pt-3 mt-2">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Total</h5>
-                            <h4 class="mb-0 fw-bold" style="color: var(--theme-primary);">₱4.75</h4>
-                        </div>
-                        <button class="btn btn-secondary w-100 py-3 fw-bold fs-6 opacity-50" disabled>Complete Order</button>
-                    </div>
-                </div>
-            </div>
+            @php
+                $firstCategory = $firstCategory->category ?? null;
+            @endphp
 
-            <div class="col-lg-3 col-md-6 h-100">
-                <div class="pos-panel preview-panel d-flex flex-column" style="background-color: var(--theme-accent-light);">
-                    <div class="preview-badge"><i class="bi bi-eye me-1"></i>Preview</div>
-                    <h5 class="fw-bold mb-3 mt-2">Active Kitchen Orders</h5>
-                    <div class="flex-grow-1">
-                        <div class="card mb-3 border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-warning text-dark">Preparing</span>
-                                </div>
-                                <h6 class="fw-bold">Order: Example</h6>
-                                <div class="text-muted small">Sample items will appear here</div>
+            <div class="item-grid" id="itemSortable">
+
+                @foreach($items as $item)
+                    <div class="categoryItems {{ $item->category !== $firstCategory ? 'd-none' : '' }}"
+                         data-id="{{ $item->id }}"
+                         data-category="{{ $item->category }}">
+
+                        <div class="item-card">
+                            <h6 class="name item-name-display">{{ $item->name }}</h6>
+                            <p class="category">{{ $item->category }}</p>
+                            <div class="price item-price-display">₱{{ $item->price }}</div>
+
+                            <div class="item-actions">
+                                <button class="icon-circle-btn edit-item-btn"><i class="bi bi-pencil"></i></button>
+                                <button class="icon-circle-btn delete-item-btn"><i class="bi bi-trash"></i></button>
                             </div>
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="ignore-drag" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <div class="add-new-card">
+                        <div class="text-center">
+                            <i class="bi bi-plus-circle fs-3 d-block mb-1"></i>
+                            <span>Add item</span>
                         </div>
                     </div>
                 </div>
+
             </div>
-        </div>
+        </section>
+
+        <section class="panel panel--preview">
+            <div class="preview-badge"><i class="bi bi-eye me-1"></i>Preview</div>
+            <h5 class="panel-title mb-3 mt-1">Current order</h5>
+
+            <div class="mini-order-name">Order for…</div>
+
+            <div class="flex-grow-1">
+                <div class="mini-receipt-row">
+                    <span class="name">Latte</span>
+                    <span class="leader"></span>
+                    <span class="price">₱4.75</span>
+                </div>
+            </div>
+
+            <div class="mini-total-row">
+                <span class="label">Total</span>
+                <span class="value">₱4.75</span>
+            </div>
+            <button class="mini-submit-btn" disabled>Send to kitchen</button>
+        </section>
+
+        <section class="panel panel--preview panel--kitchen-preview">
+            <div class="preview-badge"><i class="bi bi-eye me-1"></i>Preview</div>
+            <h5 class="panel-title mb-3 mt-1">Active kitchen orders</h5>
+
+            <div class="mini-ticket">
+                <span class="mini-status-tag">Preparing</span>
+                <div class="name">Order: Example</div>
+                <div class="note">Sample items will appear here</div>
+            </div>
+        </section>
+
     </div>
 
+    <!-- Add Category Modal -->
     <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content border-0 shadow">
-              <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
-                  <h5 class="modal-title fw-bold" id="addCategoryModalLabel">Create New Category</h5>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCategoryModalLabel">Create new category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 
-              {{-- Add Category --}}
-              <div class="modal-body p-4" style="background-color: #fffaf1;">
-                  <form id="categoryForm" action="{{ route('category.store') }}" method="POST">
+                <form id="categoryForm" action="{{ route('category.store') }}" method="POST">
                     @csrf
-                    <div class="mb-4">
-                        <label for="categoryName" class="form-label fw-bold small text-uppercase">Category Name</label>
-                        <input type="text" name="category" class="form-control border-0 shadow-sm" id="categoryName" placeholder="e.g. Signature Coffee" required>
-                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-4">
+                            <label for="categoryName" class="form-label">Category name</label>
+                            <input type="text" name="category" class="form-control p-2 rounded" id="categoryName" placeholder="e.g. Signature Coffee" required>
+                        </div>
 
-                    <div class="mb-3">
-                      <input type="hidden" name="icon" id="selectedIcon" value="bi-cup-hot">
-                      <label class="form-label fw-bold small text-uppercase">Select Icon</label>
-                      <div class="d-flex flex-wrap gap-2 p-3 bg-white rounded shadow-sm border" id="iconPicker">
-                          <div class="icon-option active" data-icon="bi-cup-hot" data-name="Hot Drinks"><i class="bi bi-cup-hot"></i></div>
-                          <div class="icon-option" data-icon="bi-cup" data-name="None Coffee"><i class="bi bi-cup"></i></div>
-                          <div class="icon-option" data-icon="bi-droplet-half" data-name="Drinks"><i class="bi bi-droplet-half"></i></div>
-                          <div class="icon-option" data-icon="bi-snow" data-name="Cold Drinks"><i class="bi bi-snow"></i></div>
-                          <div class="icon-option" data-icon="bi-egg-fried" data-name="Food"><i class="bi bi-egg-fried"></i></div>
-                          <div class="icon-option" data-icon="bi-brightness-high" data-name="Morning Snacks"><i class="bi bi-brightness-high"></i></div>
-                          <div class="icon-option" data-icon="bi-moon-stars" data-name="Midnight Snacks"><i class="bi bi-moon-stars"></i></div>
-                          <div class="icon-option" data-icon="bi-emoji-smile" data-name="Happy Meals"><i class="bi bi-emoji-smile"></i></div>
-                      </div>
+                        <div class="mb-2">
+                            <input type="hidden" name="icon" id="selectedIcon" value="bi-cup-hot">
+                            <label class="form-label">Select icon</label>
+                            <div class="icon-picker" id="iconPicker">
+                                <div class="icon-option active" data-icon="bi-cup-hot" data-name="Hot Drinks"><i class="bi bi-cup-hot"></i></div>
+                                <div class="icon-option" data-icon="bi-cup" data-name="Non-Coffee"><i class="bi bi-cup"></i></div>
+                                <div class="icon-option" data-icon="bi-droplet-half" data-name="Drinks"><i class="bi bi-droplet-half"></i></div>
+                                <div class="icon-option" data-icon="bi-snow" data-name="Cold Drinks"><i class="bi bi-snow"></i></div>
+                                <div class="icon-option" data-icon="bi-egg-fried" data-name="Food"><i class="bi bi-egg-fried"></i></div>
+                                <div class="icon-option" data-icon="bi-brightness-high" data-name="Morning Snacks"><i class="bi bi-brightness-high"></i></div>
+                                <div class="icon-option" data-icon="bi-moon-stars" data-name="Midnight Snacks"><i class="bi bi-moon-stars"></i></div>
+                                <div class="icon-option" data-icon="bi-emoji-smile" data-name="Happy Meals"><i class="bi bi-emoji-smile"></i></div>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                  <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
-                      <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                      <button type="submit" form="categoryForm" class="btn btn-theme px-4 py-2 fw-bold">Create Category</button>
-                  </div>
+                    <div class="modal-footer p-4">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-theme px-4 py-2">Create category</button>
+                    </div>
                 </form>
-          </div>
-      </div>
-  </div>
-  
-  <!-- Add Item Modal -->
-  <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            
-            <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
-                <h5 class="modal-title fw-bold" id="addItemModalLabel">Create New Menu Item</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
-            <div class="modal-body p-4" style="background-color: #fffaf1;">
-              {{-- Save Item --}}
-              <form id="itemForm" action="{{ route('item.store')}}" method="POST">
-                @csrf
-                <input type="hidden" name="category" id="categoryInput" value="{{ $firstCategory }}">
-                <!-- Item Name -->
-                <div class="mb-4">
-                    <label for="itemName" class="form-label fw-bold small text-uppercase">Item Name</label>
-                    <input type="text" name="name" class="form-control border-0 shadow-sm p-2" id="itemName" placeholder="e.g. Caramel Macchiato" required>
-                </div>
-                <!-- Price Input -->
-                <div class="mb-3">
-                    <label for="itemPrice" class="form-label fw-bold small text-uppercase">Price</label>
-                    <div class="input-group shadow-sm border-0 rounded">
-                        <span class="input-group-text bg-white border-0 text-muted fw-bold">₱</span>
-                        <input name="price" type="number" class="form-control border-0" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="itemForm" class="btn btn-theme px-4 py-2 fw-bold">Save Item</button>
-                </div>
-              </form>
             </div>
         </div>
-      </div>
-  </div>
-  <!-- Edit Item Modal -->
+    </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addItemModalLabel">Create new menu item</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form id="itemForm" action="{{ route('item.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="category" id="categoryInput" value="{{ $firstCategory }}">
+                    <div class="modal-body p-4">
+                        <div class="mb-4">
+                            <label for="itemName" class="form-label">Item name</label>
+                            <input type="text" name="name" class="form-control p-2 rounded" id="itemName" placeholder="e.g. Caramel Macchiato" required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="itemPrice" class="form-label">Price</label>
+                            <div class="input-group rounded overflow-hidden">
+                                <span class="input-group-text fw-bold">₱</span>
+                                <input name="price" type="number" class="form-control" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer p-4">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-theme px-4 py-2">Save item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
     <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            
-            <div class="modal-header text-white" style="background-color: var(--theme-primary); border-radius: 12px 12px 0 0;">
-                <h5 class="modal-title fw-bold" id="editItemModalLabel">Edit Menu Item</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
-            <div class="modal-body p-4" style="background-color: #fffaf1;">
+            <div class="modal-content shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editItemModalLabel">Edit menu item</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
                 <form id="editItemForm">
-                <!-- Hidden input to store the item ID being edited -->
-                <input type="hidden" name="id" id="editItemId">
-                
-                <div class="mb-4">
-                    <label for="editItemName" class="form-label fw-bold small text-uppercase">Item Name</label>
-                    <input type="text" name="name" class="form-control border-0 shadow-sm p-2" id="editItemName" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="editItemPrice" class="form-label fw-bold small text-uppercase">Price</label>
-                    <div class="input-group shadow-sm border-0 rounded">
-                        <span class="input-group-text bg-white border-0 text-muted fw-bold">₱</span>
-                        <input name="price" type="number" class="form-control border-0" id="editItemPrice" step="0.01" min="0" required>
+                    <input type="hidden" name="id" id="editItemId">
+                    <div class="modal-body p-4">
+                        <div class="mb-4">
+                            <label for="editItemName" class="form-label">Item name</label>
+                            <input type="text" name="name" class="form-control p-2 rounded" id="editItemName" required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="editItemPrice" class="form-label">Price</label>
+                            <div class="input-group rounded overflow-hidden">
+                                <span class="input-group-text fw-bold">₱</span>
+                                <input name="price" type="number" class="form-control" id="editItemPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="modal-footer border-0 p-4" style="background-color: #fffaf1; border-radius: 0 0 12px 12px;">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-theme px-4 py-2 fw-bold">Update Item</button>
-                </div>
+                    <div class="modal-footer p-4">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-theme px-4 py-2">Update item</button>
+                    </div>
                 </form>
             </div>
         </div>
-        </div>
     </div>
+
+    <!-- Delete Item Modal -->
     <div class="modal fade" id="deleteItemModal" tabindex="-1" aria-labelledby="deleteItemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-danger text-white border-0">
-                    <h5 class="modal-title fw-bold" id="deleteItemModalLabel">Delete Item</h5>
+            <div class="modal-content shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteItemModalLabel">Delete item</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -482,418 +668,244 @@
                         <input type="hidden" name="id" id="deleteItemId">
                     </form>
                 </div>
-                <div class="modal-footer border-0 p-4">
+                <div class="modal-footer p-4">
                     <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="deleteItemForm" class="btn btn-danger px-4 py-2 fw-bold">Yes, Delete</button>
+                    <button type="submit" form="deleteItemForm" class="btn btn-danger px-4 py-2">Yes, delete</button>
                 </div>
             </div>
         </div>
     </div>
-    {{-- delete category --}}
+
+    <!-- Delete Category Modal -->
     <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-
-                <div class="modal-header bg-danger text-white border-0">
-                    <h5 class="modal-title fw-bold" id="deleteCategoryModalLabel">
-                        Delete Category
-                    </h5>
-
-                    <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteCategoryModalLabel">Delete category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
                 <div class="modal-body p-4">
-                    <p>
-                        Are you sure you want to delete
-                        <strong id="deleteCategoryName"></strong>?
-                        This action cannot be undone.
-                    </p>
-
+                    <p>Are you sure you want to delete <strong id="deleteCategoryName"></strong>? This action cannot be undone.</p>
                     <form id="deleteCategoryForm">
                         <input type="hidden" name="id" id="deleteCategoryId">
                     </form>
                 </div>
-
-                <div class="modal-footer border-0 p-4">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-2"
-                        data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                        form="deleteCategoryForm"
-                        class="btn btn-danger px-4 py-2 fw-bold">
-                        Yes, Delete
-                    </button>
+                <div class="modal-footer p-4">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="deleteCategoryForm" class="btn btn-danger px-4 py-2">Yes, delete</button>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        // 1. SortableJS for Categories
+        const api = {
+            get: async (url) => {
+                const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                return res.json();
+            },
+            post: async (url, data) => {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify(data),
+                });
+                return res.json();
+            },
+            update: async (url, data, method = 'PUT') => {
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify(data),
+                });
+                return res.json();
+            },
+            delete: async (url) => {
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                });
+                return res.json();
+            },
+        };
+    </script>
+
+    <script>
+        // Drag-to-reorder: categories
         const categoryList = document.getElementById('categorySortable');
         new Sortable(categoryList, {
             animation: 150,
             ghostClass: 'sortable-ghost-cat',
-            filter: '.btn-light', 
-            onEnd: async function (evt) {
-                // Grab all category wrapper IDs in their new order
+            filter: '.add-category-btn',
+            onEnd: async function () {
                 const orderedCategoryIds = Array.from(categoryList.querySelectorAll('.category-wrapper'))
                     .map(el => el.dataset.id);
-
                 try {
-                    // Send the new array of IDs to your Laravel backend
                     await api.post('/categories/reorder', { order: orderedCategoryIds });
-                    console.log('Category order saved:', orderedCategoryIds);
                 } catch (error) {
                     console.error('Failed to save category order', error);
                 }
             }
         });
 
-        // 2. SortableJS for Items
+        // Drag-to-reorder: items within the active category
         const itemList = document.getElementById('itemSortable');
         new Sortable(itemList, {
             animation: 150,
             ghostClass: 'sortable-ghost-item',
-            filter: '.ignore-drag', 
-            onEnd: async function (evt) {
-                // We only want to save the order of the currently visible category
+            filter: '.ignore-drag',
+            onEnd: async function () {
                 const activeCategory = document.getElementById('categoryInput').value;
-
-                // Grab all item IDs that belong to the active category
                 const orderedItemIds = Array.from(itemList.querySelectorAll(`.categoryItems[data-category="${activeCategory}"]`))
                     .map(el => el.dataset.id);
-
                 try {
-                    // Send the new array to Laravel
                     await api.post('/items/reorder', { order: orderedItemIds, category: activeCategory });
-                    console.log('Item order saved:', orderedItemIds);
                 } catch (error) {
                     console.error('Failed to save item order', error);
                 }
             }
         });
 
-        // // 3. Save Category Modal Logic
-        // document.getElementById('categoryForm').addEventListener('submit', async function(e) {
-        //     e.preventDefault(); // Stop standard form submission
-
-        //     // Convert form data to a JSON object
-        //     const formData = new FormData(this);
-        //     const data = Object.fromEntries(formData.entries());
-
-        //     try {
-        //         const response = await api.post(this.action, data);
-                
-        //         // Close the modal cleanly
-        //         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
-        //         modalInstance.hide();
-                
-        //         this.reset(); // Clear the form
-                
-        //         // TODO: Dynamically inject the new category HTML here (we can do this later)
-        //         console.log('Category successfully saved to DB!', response);
-                
-        //         // Temporary fallback to see changes immediately:
-        //         // window.location.reload(); 
-        //     } catch (error) {
-        //         console.error('Error saving category:', error);
-        //     }
-        // });
-
-        // // 4. Save Item Modal Logic
-        // document.getElementById('itemForm').addEventListener('submit', async function(e) {
-        //     e.preventDefault();
-
-        //     const formData = new FormData(this);
-        //     const data = Object.fromEntries(formData.entries());
-
-        //     try {
-        //         const response = await api.post(this.action, data);
-                
-        //         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
-        //         modalInstance.hide();
-                
-        //         this.reset();
-                
-        //         // TODO: Dynamically inject the new item card HTML here (we can do this later)
-        //         console.log('Item successfully saved to DB!', response);
-                
-        //     } catch (error) {
-        //         console.error('Error saving item:', error);
-        //     }
-        // });
-
-        // 5. Open Edit Modal and Populate Data
-        document.getElementById('itemSortable').addEventListener('click', function(e) {
-            // Check if the clicked element (or its parent) is the edit button
+        // Open + populate the edit-item modal
+        document.getElementById('itemSortable').addEventListener('click', function (e) {
             const editBtn = e.target.closest('.edit-item-btn');
+            if (!editBtn) return;
 
-            if (editBtn) {
-                // Climb up the DOM to find the main item card wrapper
-                const itemCard = editBtn.closest('.categoryItems');
-                
-                // Extract data from the DOM
-                const itemId = itemCard.dataset.id;
-                const itemName = itemCard.querySelector('h6').innerText;
-                // Grab the price and strip out the dollar sign/whitespace
-                const itemPrice = itemCard.querySelector('.mt-auto').innerText.replace('$', '').trim();
+            const itemCard = editBtn.closest('.categoryItems');
+            const itemId = itemCard.dataset.id;
+            const itemName = itemCard.querySelector('.item-name-display').innerText;
+            const itemPrice = itemCard.querySelector('.item-price-display').innerText.replace('₱', '').trim();
 
-                // Populate the modal inputs
-                document.getElementById('editItemId').value = itemId;
-                document.getElementById('editItemName').value = itemName.toUpperCase();
-                document.getElementById('editItemPrice').value = itemPrice;
+            document.getElementById('editItemId').value = itemId;
+            document.getElementById('editItemName').value = itemName;
+            document.getElementById('editItemPrice').value = itemPrice;
 
-                // Open the modal
-                const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
-                editModal.show();
-            }
+            const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+            editModal.show();
         });
 
-        // 6. Save Edit Modal Logic
-        document.getElementById('editItemForm').addEventListener('submit', async function(e) {
+        // Save an edited item
+        document.getElementById('editItemForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
-            const itemId = data.id; // Grab the ID from the hidden field
+            const itemId = data.id;
 
-            const categoryItems = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
-            const ItemName = categoryItems.querySelector('#itemChangedName');
-            const ItemPrice = categoryItems.querySelector('#itemChangedPrice');
+            const categoryItem = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
+
             try {
-                // We'll use your api.update wrapper and assume your Laravel route follows RESTful conventions like /items/{id}
-                const response = await api.update(`/items/${itemId}/update`, data);
-                
-                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                modalInstance.hide();
-                
-                console.log('Item updated successfully in DB!', response);
+                await api.update(`/items/${itemId}/update`, data);
 
-                ItemName.textContent = data.name.toUpperCase();
-                ItemPrice.textContent = data.price;
-                
+                bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
+
+                categoryItem.querySelector('.item-name-display').textContent = data.name;
+                categoryItem.querySelector('.item-price-display').textContent = `₱${data.price}`;
             } catch (error) {
                 console.error('Error updating item:', error);
             }
         });
 
-        // 7. Trigger Delete Modal
-        document.getElementById('itemSortable').addEventListener('click', function(e) {
+        // Trigger the delete-item modal
+        document.getElementById('itemSortable').addEventListener('click', function (e) {
             const deleteBtn = e.target.closest('.delete-item-btn');
-            
-            if (deleteBtn) {
-                const itemCard = deleteBtn.closest('.categoryItems');
-                const itemId = itemCard.dataset.id;
-                const itemName = itemCard.querySelector('h6').innerText;
+            if (!deleteBtn) return;
 
-                // Populate modal with item info
-                document.getElementById('deleteItemId').value = itemId;
-                document.getElementById('deleteItemName').innerText = itemName;
+            const itemCard = deleteBtn.closest('.categoryItems');
+            document.getElementById('deleteItemId').value = itemCard.dataset.id;
+            document.getElementById('deleteItemName').innerText = itemCard.querySelector('.item-name-display').innerText;
 
-                // Show the modal
-                const deleteModal = new bootstrap.Modal(document.getElementById('deleteItemModal'));
-                deleteModal.show();
-            }
+            new bootstrap.Modal(document.getElementById('deleteItemModal')).show();
         });
 
-        // 8. Confirm Delete Action
-        document.getElementById('deleteItemForm').addEventListener('submit', async function(e) {
+        // Confirm item delete
+        document.getElementById('deleteItemForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            
             const itemId = document.getElementById('deleteItemId').value;
 
             try {
-                // Call your API delete method
                 await api.delete(`/items/${itemId}/delete`);
-                
-                // Hide the modal
-                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteItemModal'));
-                modalInstance.hide();
-                
-                // Remove the item from the UI immediately
-                const itemElement = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
-                itemElement.remove();
-                
-                console.log('Item deleted successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('deleteItemModal')).hide();
+                document.querySelector(`.categoryItems[data-id="${itemId}"]`).remove();
             } catch (error) {
                 console.error('Error deleting item:', error);
             }
         });
 
-        // 9
-        document.getElementById('categorySortable').addEventListener('click', function(e) {
+        // Trigger the delete-category modal
+        document.getElementById('categorySortable').addEventListener('click', function (e) {
             const deleteBtn = e.target.closest('.delete-category-btn');
-
             if (!deleteBtn) return;
 
             const category = deleteBtn.closest('.category-wrapper');
+            document.getElementById('deleteItemId').value = category.dataset.id;
+            document.getElementById('deleteCategoryName').textContent = category.dataset.category;
 
-            const categoryId = category.dataset.id;
-            const categoryName = category.dataset.category;
-
-            const itemId = document.getElementById('deleteItemId').value = categoryId;
-            
-            document.getElementById('deleteCategoryName').textContent = categoryName;
-
-            const modal = new bootstrap.Modal(
-                document.getElementById('deleteCategoryModal')
-            );
-
-            modal.show();
+            new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
         });
 
-        // 10. Confirm Delete Category Action
-        document.getElementById('deleteCategoryForm').addEventListener('submit', async function(e) {
+        // Confirm category delete
+        document.getElementById('deleteCategoryForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-
-            const itemId = document.getElementById('deleteItemId').value;
+            const categoryId = document.getElementById('deleteItemId').value;
 
             try {
-                // Call your API delete method
-                await api.delete(`/category/${itemId}/delete`);
-                
-                // Hide the modal
-                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal'));
-                modalInstance.hide();
-                
-                // Remove the item from the UI immediately
-                const itemElement = document.querySelector(`.categoryButton[data-id="${itemId}"]`);
-                itemElement.remove();
-                
-                console.log('Item deleted successfully!');
+                await api.delete(`/category/${categoryId}/delete`);
+                bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal')).hide();
+                document.querySelector(`.category-wrapper[data-id="${categoryId}"]`).remove();
             } catch (error) {
-                console.error('Error deleting item:', error);
+                console.error('Error deleting category:', error);
             }
         });
-
     </script>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Select all icon options and the hidden input
-        const iconOptions = document.querySelectorAll('.icon-option');
-        const selectedIconInput = document.getElementById('selectedIcon');
+        // Icon picker for the Add Category modal
+        document.addEventListener('DOMContentLoaded', function () {
+            const iconOptions = document.querySelectorAll('.icon-option');
+            const selectedIconInput = document.getElementById('selectedIcon');
 
-        // Loop through each icon option and attach a click event
-        iconOptions.forEach(option => {
-            option.addEventListener('click', function() {
-                // 1. Remove the 'active' class from ALL options
-                iconOptions.forEach(opt => opt.classList.remove('active'));
-                
-                // 2. Add the 'active' class to the clicked option
-                this.classList.add('active');
-                
-                // 3. Grab the data-icon value and assign it to the hidden input
-                const chosenIcon = this.getAttribute('data-icon');
-                selectedIconInput.value = chosenIcon;
-
-                const inptu = document.getElementById('categoryName');
-                inptu.value = option.dataset.name.toUpperCase();
+            iconOptions.forEach(option => {
+                option.addEventListener('click', function () {
+                    iconOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedIconInput.value = this.getAttribute('data-icon');
+                    document.getElementById('categoryName').value = this.dataset.name;
+                });
             });
         });
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-        const categories = document.querySelectorAll('.categoryButton');
-        const selectedCategoryInput = document.getElementById('categoryInput');
-        categories.forEach(option => {
-            option.addEventListener('click', function() {
-                // 1. Remove the 'active' class from ALL options
-                categories.forEach(opt => opt.classList.remove('btn-theme'));
-                
-                // 2. Add the 'active' class to the clicked option
-                this.classList.add('btn-theme');
-                
-                // 3. Grab the data-icon value and assign it to the hidden input
-                const selectedCategory = this.dataset.category;
-                selectedCategoryInput.value = selectedCategory;
+
+        // Category tabs: set active state, update the add-item hidden input, filter the grid
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.categoryButton');
+            const selectedCategoryInput = document.getElementById('categoryInput');
+            const items = document.querySelectorAll('#itemSortable .categoryItems');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    buttons.forEach(b => b.classList.remove('btn-theme'));
+                    this.classList.add('btn-theme');
+
+                    const selectedCategory = this.dataset.category;
+                    selectedCategoryInput.value = selectedCategory;
+
+                    items.forEach(item => {
+                        item.classList.toggle('d-none', item.dataset.category !== selectedCategory);
+                    });
+                });
             });
         });
-    });
-
-    document.addEventListener("DOMContentLoaded", function () {
-    const buttons = document.querySelectorAll(".categoryButton");
-    const items = document.querySelectorAll("#itemSortable [data-category]");
-
-    buttons.forEach(btn => {
-        btn.addEventListener("click", function () {
-            const selectedCategory = this.dataset.category;
-
-            items.forEach(item => {
-                const itemCategory = item.dataset.category;
-
-                if (selectedCategory === "all" || itemCategory === selectedCategory) {
-                    item.classList.remove("d-none");
-                } else {
-                    item.classList.add("d-none");
-                }
-            });
-        });
-    });
-});
-</script>
-<script>
-    const api = {
-        get: async (url) => {
-            const res = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json",
-                },
-            });
-
-            return res.json();
-        },
-
-        post: async (url, data) => {
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-                body: JSON.stringify(data),
-            });
-
-            return res.json();
-        },
-
-        update: async (url, data, method = "PUT") => {
-            const res = await fetch(url, {
-                method: method, // PUT or PATCH
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-                body: JSON.stringify(data),
-            });
-
-            return res.json();
-        },
-
-        delete: async (url) => {
-            const res = await fetch(url, {
-                method: "DELETE",
-                headers: {
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content"),
-                },
-            });
-
-            return res.json();
-        }
-    };
-</script>
+    </script>
 </body>
 </html>
