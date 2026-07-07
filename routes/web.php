@@ -7,10 +7,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\QueueListController;
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+use App\Http\Controllers\SalesController;
 
 Route::get('/orders', function () {
     return view('queue');
@@ -24,11 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     Route::get('/', [PageController::class, 'index'])->name('home');
-    
     Route::post('/cart/checkout', [PurchaseController::class, 'purchase']);
-
     Route::put('/api/orders/{orderName}/ready', [QueueListController::class, 'update']);
     Route::delete('/api/orders/{orderName}/remove', [QueueListController::class, 'destroy']);
+    
+    Route::get('/dashboard', [SalesController::class, 'index'])->name('dashboard');
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
@@ -46,18 +43,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     });
 });
 
-
-
 require __DIR__.'/auth.php';
-
-
-
-
-
-
-
-// });
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Item;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class PageController extends Controller
@@ -15,7 +16,7 @@ class PageController extends Controller
         $categories = Category::orderBy('position', 'asc')->get();
         
         if ($categories->isEmpty()) {
-            return view('editOrder', [
+            return view('admin.editOrder', [
                 'categories' => collect(),
                 'items' => collect(),
                 'firstCategory' => null
@@ -26,15 +27,16 @@ class PageController extends Controller
 
         $items = Item::orderBy('position', 'asc')->get();
 
-        return view('editOrder', compact('categories', 'items', 'firstCategory'));
+        return view('admin.editOrder', compact('categories', 'items', 'firstCategory'));
     }
 
     public function index()
     {
         $categories = Category::orderBy('position', 'asc')->get();
         $items = Item::orderBy('position', 'asc')->get();
-
-        return view('welcome', compact('categories', 'items'));
+        $taxString = Setting::where('name', 'tax')->first();
+        $taxDecimal = (float) $taxString->value;
+        return view('pos', compact('categories', 'items', 'taxDecimal'));
     }
 
     /**

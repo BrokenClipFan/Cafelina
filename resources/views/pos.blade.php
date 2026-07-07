@@ -425,6 +425,10 @@
         }
         .ticket-action--clear:hover { background: var(--moss-tint); }
         .ticket-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .dashboard-btn {
+            background-color: var(--stamp) !important;
+        }
     </style>
 </head>
 <body>
@@ -471,6 +475,8 @@
             <p class="panel-sub">Live from the queue</p>
 
             <div class="kitchen-list"></div>
+            
+            <a href="{{ route('dashboard') }}"><button class="submit-btn dashboard-btn">Dashboard</button></a>
         </section>
 
     </div>
@@ -692,8 +698,10 @@
         }
 
         function totalAllCart() {
-            const total = Array.from(cartList.querySelectorAll('.item-total'))
+            let total = Array.from(cartList.querySelectorAll('.item-total'))
                 .reduce((sum, el) => sum + (parseFloat(el.textContent.replace('₱', '')) || 0), 0);
+
+            total = total + (total * @json($taxDecimal));
             cartTotalEl.textContent = `₱${total.toFixed(2)}`;
         }
 

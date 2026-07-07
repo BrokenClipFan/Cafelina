@@ -1,10 +1,4 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,500&family=Space+Grotesk:wght@500;700&display=swap');
 
@@ -25,7 +19,25 @@
         .cf-nav-card:hover .cf-arrow {
             transform: translateX(3px);
         }
+
+        .cf-shift-row:last-child { border-bottom: none !important; }
     </style>
+
+    @php
+        // Fallback sample data so this page renders before the controller
+        // passes real values. Replace with real bindings scoped to
+        // auth()->user(): $shifts, $salesToday, $itemsSoldToday,
+        // $weeklyLabels, $weeklySales.
+        $shifts = $shifts ?? [
+            ['day' => 'Today',    'date' => now()->format('M j'),           'time' => '7:00 AM – 3:00 PM',  'role' => 'Barista'],
+            ['day' => 'Tomorrow', 'date' => now()->addDay()->format('M j'), 'time' => '7:00 AM – 3:00 PM',  'role' => 'Barista'],
+            ['day' => now()->addDays(3)->format('l'), 'date' => now()->addDays(3)->format('M j'), 'time' => '10:00 AM – 6:00 PM', 'role' => 'Cashier'],
+        ];
+        $salesToday = $salesToday ?? null;
+        $itemsSoldToday = $itemsSoldToday ?? null;
+        $weeklyLabels = $weeklyLabels ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        $weeklySales = $weeklySales ?? [1200, 1450, 980, 1600, 2100, 2600, 1750];
+    @endphp
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -43,17 +55,70 @@
                         <h1 class="cf-display text-2xl font-semibold text-white">
                             {{ __('Welcome back') }}{{ Auth::user() ? ', ' . Auth::user()->name : '' }}
                         </h1>
-                        <p class="text-sm mt-1" style="color:#EAD9B7;">{{ __("Here's where you can jump in.") }}</p>
+                        <p class="text-sm mt-1" style="color:#EAD9B7;">{{ __("Here's your schedule and sales at a glance.") }}</p>
                     </div>
                 </div>
             </div>
 
+            <!-- Schedule + personal sales -->
+            <div class="gap-6">
+
+                <!-- My schedule -->
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="cf-display text-lg font-semibold text-gray-800 dark:text-gray-200">My schedule</h3>
+                        <span class="cf-mono text-xs uppercase tracking-wide px-2 py-1 rounded-full" style="background-color:#F6E7C9; color:#A4692A;">
+                            Upcoming
+                        </span>
+                    </div>
+
+                    @forelse ($shifts as $shift)
+                        <div class="cf-shift-row flex items-center justify-between py-3 border-b" style="border-color:#EAD9B7;">
+                            <div>
+                                <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $shift['day'] }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $shift['date'] }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="cf-mono text-sm font-semibold" style="color:#A4692A;">{{ $shift['time'] }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $shift['role'] }}</p>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">No upcoming shifts scheduled.</p>
+                    @endforelse
+                </div>
+
+                <!-- My sales -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mt-5">
+                    <h3 class="cf-display text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">My sales</h3>
+
+                    <div class="grid grid-cols-2 gap-3 mb-5">
+                        <div class="rounded-lg p-3" style="background-color:#F7EFE0;">
+                            <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Today</p>
+                            <p class="cf-mono text-xl font-bold" style="color:#A4692A;">
+                                {{ isset($salesToday) ? '₱'.number_format($salesToday, 2) : '—' }}
+                            </p>
+                        </div>
+                        <div class="rounded-lg p-3" style="background-color:#F7EFE0;">
+                            <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Items sold</p>
+                            <p class="cf-mono text-xl font-bold" style="color:#A4692A;">{{ $itemsSoldToday ?? '—' }}</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Last 7 days</p>
+                    <div style="position: relative; height:160px; width:100%;">
+                        <canvas id="mySalesChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
             <!-- Quick navigation -->
-            <div>
+            {{-- <div>
                 <h3 class="cf-display text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Jump to</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-                    <a href="{{ Route::has('home') ? route('home') : '#' }}"
+                    <a href="{{ route('home') }}"
                        class="cf-nav-card block bg-white dark:bg-gray-800 rounded-xl p-6 border-2 dark:border-gray-700"
                        style="border-color:#EAD9B7;">
                         <div class="w-11 h-11 rounded-full flex items-center justify-center mb-4" style="background-color:#F6E7C9;">
@@ -101,29 +166,36 @@
                     </a>
 
                 </div>
-            </div>
-
-            <!-- Today at a glance -->
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl">
-                <div class="p-6">
-                    <h3 class="cf-display text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Today at a glance</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="rounded-lg p-4" style="background-color:#F7EFE0;">
-                            <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Orders today</p>
-                            <p class="cf-mono text-2xl font-bold" style="color:#A4692A;">{{ $ordersToday ?? '—' }}</p>
-                        </div>
-                        <div class="rounded-lg p-4" style="background-color:#F7EFE0;">
-                            <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Active in kitchen</p>
-                            <p class="cf-mono text-2xl font-bold" style="color:#A4692A;">{{ $activeOrders ?? '—' }}</p>
-                        </div>
-                        <div class="rounded-lg p-4" style="background-color:#F7EFE0;">
-                            <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Revenue today</p>
-                            <p class="cf-mono text-2xl font-bold" style="color:#A4692A;">{{ isset($revenueToday) ? '₱'.number_format($revenueToday, 2) : '—' }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </div> --}}
 
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('mySalesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: @json($weeklyLabels),
+                    datasets: [{
+                        data: @json($weeklySales),
+                        backgroundColor: '#C6863B',
+                        borderRadius: 6,
+                        maxBarThickness: 26,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { display: false, beginAtZero: true },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
 </x-app-layout>
