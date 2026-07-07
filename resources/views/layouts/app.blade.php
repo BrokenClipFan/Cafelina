@@ -154,13 +154,9 @@
                                class="cf-nav-link {{ request()->routeIs('home') ? 'cf-nav-link--active' : '' }}">
                                 Point of Sale
                             </a>
-                            <a href="{{ Route::has('queue.display') ? route('queue.display') : '/queue' }}"
+                            <a href="{{ route('queue.display') }}"
                                class="cf-nav-link {{ request()->routeIs('queue.display') ? 'cf-nav-link--active' : '' }}">
                                 Order Board
-                            </a>
-                            <a href="{{ Route::has('menu.edit') ? route('menu.edit') : '/menu/edit' }}"
-                               class="cf-nav-link {{ request()->routeIs('menu.edit') ? 'cf-nav-link--active' : '' }}">
-                                Menu Editor
                             </a>
                             @if (Auth::check() && (Auth::user()->is_admin ?? false))
                                 {{-- Adjust this check to whatever your actual admin/role gate is --}}
@@ -205,7 +201,6 @@
                 <a href="{{ Route::has('dashboard') ? route('dashboard') : '#' }}" class="cf-mobile-link {{ request()->routeIs('dashboard') ? 'cf-nav-link--active' : '' }}">Dashboard</a>
                 <a href="{{ Route::has('home') ? route('home') : '#' }}" class="cf-mobile-link {{ request()->routeIs('home') ? 'cf-nav-link--active' : '' }}">Point of Sale</a>
                 <a href="{{ Route::has('queue.display') ? route('queue.display') : '/queue' }}" class="cf-mobile-link {{ request()->routeIs('queue.display') ? 'cf-nav-link--active' : '' }}">Order Board</a>
-                <a href="{{ Route::has('menu.edit') ? route('menu.edit') : '/menu/edit' }}" class="cf-mobile-link {{ request()->routeIs('menu.edit') ? 'cf-nav-link--active' : '' }}">Menu Editor</a>
                 @if (Auth::check() && (Auth::user()->is_admin ?? false))
                     <a href="{{ Route::has('admin.analytics') ? route('admin.analytics') : '#' }}" class="cf-mobile-link {{ request()->routeIs('admin.analytics') ? 'cf-nav-link--active' : '' }}">Analytics</a>
                 @endif

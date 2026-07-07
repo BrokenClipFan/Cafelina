@@ -3,18 +3,31 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Purchase;
+use Illuminate\Support\Facades\Auth;
+use App\Services\Dashboard;
 
 class SalesController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Dashboard $dashboardService)
     {
-        $salesToday = Purchase::whereDate('created_at', today())->sum('total');
+        $user = Auth::user();
 
-        return view('dashboard', compact('salesToday'));
+        if($user->role === 'admin'){
+            return redirect('admin/dashboard');
+        }
+
+        $result = $dashboardService->userSales($user->id);
+
+        $salesToday       = $result->salesToday;
+        $itemsSoldToday   = $result->itemsSoldToday;
+        $weeklySales      = $result->weeklySales;
+        $weeklyLabels     = $result->weeklyLabels;
+        $weeklyItemCounts = $result->weeklyItemCounts; // Added here
+
+        return view('dashboard', compact('salesToday', 'itemsSoldToday', 'weeklySales', 'weeklyLabels', 'weeklyItemCounts'));
     }
 
     /**

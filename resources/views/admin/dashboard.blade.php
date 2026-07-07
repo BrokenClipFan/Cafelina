@@ -172,7 +172,7 @@
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Gross Revenue</h6>
-                        <span class="card-value">₱142,500.00</span>
+                        <span class="card-value">₱@json($grossRevenue)</span>
                     </div>
                 </div>
             </div>
@@ -180,7 +180,7 @@
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Subtotal Collected</h6>
-                        <span class="card-value">₱127,230.00</span>
+                        <span class="card-value">₱@json($subTotalCollected)</span>
                     </div>
                 </div>
             </div>
@@ -188,7 +188,7 @@
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Taxes Accrued</h6>
-                        <span class="card-value">₱15,270.00</span>
+                        <span class="card-value">₱@json($taxAccrued)</span>
                     </div>
                 </div>
             </div>
@@ -196,7 +196,7 @@
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Total Items Sold</h6>
-                        <span class="card-value">1,842 <small class="fs-6 fw-normal" style="color: var(--ink-soft);">units</small></span>
+                        <span class="card-value">@json($totalItemsSold)<small class="fs-6 fw-normal" style="color: var(--ink-soft);">units</small></span>
                     </div>
                 </div>
             </div>

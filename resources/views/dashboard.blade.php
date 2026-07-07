@@ -24,10 +24,6 @@
     </style>
 
     @php
-        // Fallback sample data so this page renders before the controller
-        // passes real values. Replace with real bindings scoped to
-        // auth()->user(): $shifts, $salesToday, $itemsSoldToday,
-        // $weeklyLabels, $weeklySales.
         $shifts = $shifts ?? [
             ['day' => 'Today',    'date' => now()->format('M j'),           'time' => '7:00 AM – 3:00 PM',  'role' => 'Barista'],
             ['day' => 'Tomorrow', 'date' => now()->addDay()->format('M j'), 'time' => '7:00 AM – 3:00 PM',  'role' => 'Barista'],
@@ -37,12 +33,12 @@
         $itemsSoldToday = $itemsSoldToday ?? null;
         $weeklyLabels = $weeklyLabels ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         $weeklySales = $weeklySales ?? [1200, 1450, 980, 1600, 2100, 2600, 1750];
+        $weeklyItemCounts = $weeklyItemCounts ?? [12, 15, 9, 18, 24, 30, 19]; // Fallback data added
     @endphp
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <!-- Welcome banner -->
             <div class="rounded-xl overflow-hidden shadow-sm" style="background-color:#40291B;">
                 <div class="p-8 flex items-center gap-5">
                     <div class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style="background-color:#C6863B;">
@@ -60,10 +56,8 @@
                 </div>
             </div>
 
-            <!-- Schedule + personal sales -->
             <div class="gap-6">
 
-                <!-- My schedule -->
                 <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="cf-display text-lg font-semibold text-gray-800 dark:text-gray-200">My schedule</h3>
@@ -88,7 +82,6 @@
                     @endforelse
                 </div>
 
-                <!-- My sales -->
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mt-5">
                     <h3 class="cf-display text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">My sales</h3>
 
@@ -106,90 +99,70 @@
                     </div>
 
                     <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Last 7 days</p>
-                    <div style="position: relative; height:160px; width:100%;">
+                    <div style="position: relative; height:190px; width:100%;">
                         <canvas id="mySalesChart"></canvas>
                     </div>
                 </div>
 
             </div>
-
-            <!-- Quick navigation -->
-            {{-- <div>
-                <h3 class="cf-display text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Jump to</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-                    <a href="{{ route('home') }}"
-                       class="cf-nav-card block bg-white dark:bg-gray-800 rounded-xl p-6 border-2 dark:border-gray-700"
-                       style="border-color:#EAD9B7;">
-                        <div class="w-11 h-11 rounded-full flex items-center justify-center mb-4" style="background-color:#F6E7C9;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#A4692A" class="w-5 h-5">
-                                <path d="M0 3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V3zm2 1v8h12V4H2z"/>
-                                <path d="M4 6h8v1H4V6zm0 2h5v1H4V8z"/>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">Point of sale</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Take orders and send them to the kitchen.</p>
-                        <span class="cf-mono text-sm font-semibold inline-flex items-center gap-1" style="color:#A4692A;">
-                            Open <span class="cf-arrow">→</span>
-                        </span>
-                    </a>
-
-                    <a href="{{ Route::has('queue.display') ? route('queue.display') : '/queue' }}"
-                       class="cf-nav-card block bg-white dark:bg-gray-800 rounded-xl p-6 border-2 dark:border-gray-700"
-                       style="border-color:#EAD9B7;">
-                        <div class="w-11 h-11 rounded-full flex items-center justify-center mb-4" style="background-color:#E1EBE0;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#2E5038" class="w-5 h-5">
-                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">Order board</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">The customer-facing preparing / ready display.</p>
-                        <span class="cf-mono text-sm font-semibold inline-flex items-center gap-1" style="color:#2E5038;">
-                            Open <span class="cf-arrow">→</span>
-                        </span>
-                    </a>
-
-                    <a href="{{ Route::has('menu.edit') ? route('menu.edit') : '/menu/edit' }}"
-                       class="cf-nav-card block bg-white dark:bg-gray-800 rounded-xl p-6 border-2 dark:border-gray-700"
-                       style="border-color:#EAD9B7;">
-                        <div class="w-11 h-11 rounded-full flex items-center justify-center mb-4" style="background-color:#F6E7C9;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#A4692A" class="w-5 h-5">
-                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5z"/>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">Menu editor</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Add, reorder, or retire categories and items.</p>
-                        <span class="cf-mono text-sm font-semibold inline-flex items-center gap-1" style="color:#A4692A;">
-                            Open <span class="cf-arrow">→</span>
-                        </span>
-                    </a>
-
-                </div>
-            </div> --}}
-
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Store the item counts array globally inside JS context
+            const itemCountsData = @json($weeklyItemCounts);
+
             const ctx = document.getElementById('mySalesChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: @json($weeklyLabels),
                     datasets: [{
+                        label: 'Your Weekly Sales',
                         data: @json($weeklySales),
                         backgroundColor: '#C6863B',
                         borderRadius: 6,
-                        maxBarThickness: 26,
+                        maxBarThickness: 60,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        // Activating and styled layout legend
+                        legend: { 
+                            display: true, 
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: {
+                                    family: "'Space Grotesk', sans-serif",
+                                    size: 11
+                                }
+                            }
+                        },
+                        // Modifying tooltip configuration behavior
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const salesAmount = context.raw;
+                                    const itemCount = itemCountsData[index] || 0;
+
+                                    // Returns custom multiline data arrays when hover status triggers
+                                    return [
+                                        `Sales: ₱${salesAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+                                        `Items Sold: ${itemCount}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         y: { display: false, beginAtZero: true },
                         x: { grid: { display: false } }

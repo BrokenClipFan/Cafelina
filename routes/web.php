@@ -8,10 +8,11 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\QueueListController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\Admin\SaleController;
 
 Route::get('/orders', function () {
     return view('queue');
-});
+})->name('queue.display');
 
 Route::get('/get/queue', [QueueListController::class, 'getOrders']);
 
@@ -38,9 +39,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/items/{id}/update', [ItemController::class, 'update']);
     Route::delete('/items/{id}/delete', [ItemController::class, 'destroy']);
 
-    Route::get('/admin/dashboard', function () {
-        return view('admin.adminDashboard');
-    });
+    Route::get('/admin/dashboard', [SaleController::class, 'index'])->name('admin.dashboard');
 });
 
 require __DIR__.'/auth.php';
