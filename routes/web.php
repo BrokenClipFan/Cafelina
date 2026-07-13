@@ -45,7 +45,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     
     Route::get('/admin/employees', [EmployeeManagementController::class, 'index'])->name('admin.employees');
     Route::post('/admin/employee/toggle/{id}', [EmployeeManagementController::class, 'toggleStatus'])->name('admin.employees.toggle_status');
-    Route::post('/admin/employee/destroy/{id}', [EmployeeManagementController::class, 'destroy'])->name('admin.employees.destroy');
+    Route::delete('/admin/employee/destroy/{id}', [EmployeeManagementController::class, 'destroy'])->name('admin.employees.destroy');
+    
+    Route::post('/admin/employee/assign', [EmployeeManagementController::class, 'assignShift'])->name('admin.employees.assign_shift');
+    Route::delete('/admin/employee/schedule/destroy/{id}', [EmployeeManagementController::class, 'destroySchedule'])->name('admin.employees.destroy_schedule');
     
 });
 

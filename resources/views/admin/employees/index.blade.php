@@ -165,37 +165,67 @@
             <!-- Dynamic inner table scroll height engine -->
             <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
                 <table class="table table-custom m-0 align-middle" style="font-size: 0.9rem;">
-                    <thead style="position: sticky; top: 0; background: #ffffff; z-index: 1;">
-                        <tr>
-                            <th>Employee</th>
-                            <th>Days Assigned</th>
-                            <th class="text-center">Shift Hours</th>
-                            <th class="text-center">Station / Role</th>
-                            <th class="text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($employees as $staff)
-                            <tr>
-                                <td class="fw-semibold text-capitalize">{{ $staff->name }}</td>
-                                <td class="text-muted" style="font-size: 0.85rem;">Monday - Friday</td>
-                                <td class="text-center fw-medium" style="font-size: 0.85rem;">08:00 AM - 05:00 PM</td>
-                                <td class="text-center">
-                                    <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
-                                        Front Counter
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-success-subtle text-success px-2 py-1" style="font-size: 0.75rem;">Scheduled</span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No active shift schedules recorded.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                  <thead style="position: sticky; top: 0; background: #ffffff; z-index: 1;">
+                      <tr>
+                          <th>Employee</th>
+                          <th>Days Assigned</th>
+                          <th class="text-center">Shift Hours</th>
+                          <th class="text-center">Station / Role</th>
+                          <th class="text-center">Status</th>
+                          <th class="text-center">Actions</th> <!-- New Header Column -->
+                      </tr>
+                  </thead>
+                  <tbody>
+                      @forelse($schedules as $schedule)
+                          <tr>
+                              <td class="fw-semibold text-capitalize">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                                          style="width: 28px; height: 28px; background-color: var(--espresso); font-size: 0.75rem;">
+                                        {{ strtoupper(substr($staff->name, 0, 2)) }}
+                                    </div>
+                                    <span> {{ $schedule->user->name ?? 'Unknown Staff' }}</span>
+                                </div>            
+                              </td>
+                              <td class="text-muted" style="font-size: 0.85rem;">
+                                  @if(is_array($schedule->days))
+                                      {{ implode(', ', $schedule->days) }}
+                                  @else
+                                      {{ $schedule->days }}
+                                  @endif
+                              </td>
+                              <td class="text-center fw-medium" style="font-size: 0.85rem;">
+                                  {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - 
+                                  {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
+                              </td>
+                              <td class="text-center">
+                                  <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
+                                      {{ $schedule->station_role }}
+                                  </span>
+                              </td>
+                              <td class="text-center">
+                                  <span class="badge bg-success-subtle text-success px-2 py-1" style="font-size: 0.75rem;">
+                                      {{ $schedule->status }}
+                                  </span>
+                              </td>
+                              <!-- Inline Delete Action Form -->
+                              <td class="text-center">
+                                  <form action="{{ route('admin.employees.destroy_schedule', $schedule->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this shift allocation?');">
+                                      @csrf
+                                      @method('DELETE')
+                                      <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size: 0.8rem;" title="Delete employee">
+                                        <i class="fa-solid fa-trash-can"></i> Remove
+                                      </button>
+                                  </form>
+                              </td>
+                          </tr>
+                      @empty
+                          <tr>
+                              <td colspan="6" class="text-center text-muted py-3">No active shift schedules recorded.</td>
+                          </tr>
+                      @endforelse
+                  </tbody>
+              </table>
             </div>
         </div>
 

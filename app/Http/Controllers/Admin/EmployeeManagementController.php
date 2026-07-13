@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\EmployeeSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,8 +28,41 @@ class EmployeeManagementController extends Controller
             ->groupBy('users.id', 'users.name', 'users.email', 'users.online_status', 'users.created_at')
             ->orderBy('users.name', 'asc')
             ->get();
+        
+        $schedules = EmployeeSchedule::with('user')->orderBy('created_at', 'desc')->get();
 
-        return view('admin.employees.index', compact('employees'));
+        return view('admin.employees.index', compact('employees', 'schedules'));
+    }
+
+    public function assignShift(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'station_role' => 'required|string|max:255',
+            'days' => 'required|array|min:1',
+        ]);
+
+        // Changed to standard create() so an employee can have multiple unique rows
+        EmployeeSchedule::create([
+            'user_id' => $validated['user_id'],
+            'days' => $validated['days'], 
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'station_role' => $validated['station_role'],
+            'status' => 'Scheduled'
+        ]);
+
+        return redirect()->back()->with('success', 'New shift block assigned successfully.');
+    }
+
+    public function destroySchedule($id): RedirectResponse
+    {
+        $schedule = EmployeeSchedule::findOrFail($id);
+        $schedule->delete();
+
+        return redirect()->back()->with('success', 'Shift schedule removed successfully.');
     }
 
     /**
@@ -61,6 +95,6 @@ class EmployeeManagementController extends Controller
         $employee = User::where('role', 'employee')->findOrFail($id);
         $employee->delete();
 
-        return redirect()->route('admin.employees.index')->with('success', 'Employee profile removed permanently.');
+        return redirect()->route('admin.employees')->with('success', 'Employee profile removed permanently.');
     }
 }
