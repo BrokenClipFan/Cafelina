@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PurchaseItem;
 
 class Purchase extends Model
 {
@@ -15,4 +16,8 @@ class Purchase extends Model
         'status',
         'name'
     ];
+
+    public function items() {
+        return $this->hasMany(PurchaseItem::class, 'purchase_id');
+    }
 }

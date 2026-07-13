@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Purchase;
 
 class PurchaseItem extends Model
 {
@@ -13,4 +14,8 @@ class PurchaseItem extends Model
     'price',
     'count'
     ];
+
+    public function purchase() {
+        return $this->belongTo(Purchase::class);
+    }
 }

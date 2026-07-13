@@ -28,11 +28,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $request->user()->update([
+            'online_status' => true
+        ]);
+
         if($request->user()->role == 'admin') {
-            return route('orders.edit_mode');
+            return redirect()->route('admin.dashboard');
         }
 
-        return route('home');
+        return redirect()->route('home');
     }
 
     /**
@@ -40,6 +44,10 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $request->user()->update([
+            'online_status' => false
+        ]);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

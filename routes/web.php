@@ -9,6 +9,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\QueueListController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\EmployeeManagementController;
 
 Route::get('/orders', function () {
     return view('queue');
@@ -40,6 +41,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/items/{id}/delete', [ItemController::class, 'destroy']);
 
     Route::get('/admin/dashboard', [SaleController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/dashboard/items/basta', [SaleController::class, 'getPopularItemsData'])->name('admin.popular_items_data');
+    
+    Route::get('/admin/employees', [EmployeeManagementController::class, 'index'])->name('admin.employees');
+    Route::post('/admin/employee/toggle/{id}', [EmployeeManagementController::class, 'toggleStatus'])->name('admin.employees.toggle_status');
+    Route::post('/admin/employee/destroy/{id}', [EmployeeManagementController::class, 'destroy'])->name('admin.employees.destroy');
+    
 });
 
 require __DIR__.'/auth.php';
