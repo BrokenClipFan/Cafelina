@@ -132,48 +132,73 @@
         }
 
         .menu-item {
+            position: relative;
             border: 1.5px solid var(--paper-warm);
             border-radius: 12px;
-            padding: 12px;
+            height: 200px; /* fixed card height */
             cursor: pointer;
             background: #fff;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-end; /* pushes text overlay to bottom */
+            overflow: hidden;
             transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
         }
+
         .menu-item:hover {
             transform: translateY(-3px);
             border-color: var(--caramel);
-            box-shadow: 0 6px 14px rgba(198, 134, 59, 0.18);
+            box-shadow: 0 6px 14px rgba(198, 134, 59, 0.25);
         }
+
         .menu-item:focus-visible {
             outline: 2px solid var(--caramel-deep);
             outline-offset: 2px;
         }
+
+        /* Background image filling the whole card */
         .menu-item-img {
+            position: absolute;
+            inset: 0;
             width: 100%;
-            height: 110px;
+            height: 100%;
             object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            z-index: 1;
             background-color: var(--paper);
         }
+
+        /* Dark gradient overlay behind text for high legibility */
+        .menu-item-content {
+            position: relative;
+            z-index: 2;
+            padding: 10px 12px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 60%, rgba(0, 0, 0, 0) 100%);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
         .menu-item .name {
             font-weight: 600;
-            font-size: 0.98rem;
+            font-size: 0.95rem;
             margin-bottom: 2px;
             line-height: 1.2;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         }
+
         .menu-item .category {
-            font-size: 0.76rem;
-            color: var(--ink-soft);
-            margin-bottom: 10px;
+            font-size: 0.74rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 4px;
         }
+
         .menu-item .price {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            color: var(--caramel-deep);
+            font-size: 1rem;
+            color: var(--caramel-tint); /* warm contrast color */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         }
 
         /* ---------------- Order / receipt panel ---------------- */
@@ -586,15 +611,15 @@
             card.dataset.name = item.name;
             card.dataset.price = item.price;
 
-            const imgSrc = item.image_path || 'https://via.placeholder.com/150?text=No+Image';
+            const imgSrc = 'storage/' + item.image_path;
 
             card.innerHTML = `
-                <div>
-                    <img src="${imgSrc}" alt="${item.name}" class="menu-item-img" onerror="this.src='https://via.placeholder.com/150?text=No+Image';">
+                <img src="${imgSrc}" alt="${item.name}" class="menu-item-img">
+                <div class="menu-item-content">
                     <div class="name">${item.name}</div>
                     <div class="category">${item.category}</div>
+                    <div class="price">₱${Number(item.price).toFixed(2)}</div>
                 </div>
-                <div class="price">₱${Number(item.price).toFixed(2)}</div>
             `;
 
             card.addEventListener('click', () => addToCart(card));
