@@ -468,6 +468,45 @@
         .dashboard-btn {
             background-color: var(--stamp) !important;
         }
+
+        /* Printable Receipt Styles */
+        #printableReceipt {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReceipt, #printableReceipt * {
+                visibility: visible;
+            }
+            #printableReceipt {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm; /* standard thermal paper width */
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 12px;
+                color: #000;
+                padding: 10px;
+            }
+            .receipt-header, .receipt-footer {
+                text-align: center;
+            }
+            .receipt-divider {
+                border-top: 1px dashed #000;
+                margin: 6px 0;
+            }
+            .receipt-table {
+                width: 100%;
+            }
+            .receipt-table td {
+                padding: 2px 0;
+            }
+            .text-end { text-align: right; }
+        }
     </style>
 </head>
 <body>
@@ -520,6 +559,7 @@
 
     </div>
 
+    <div id="printableReceipt"></div>
     @include('partials.notifications')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -767,9 +807,55 @@
     </script>
 
     <script>
-        /* ---------------- Submit order ---------------- */
+        function generateReceiptHtml(orderName, items, total, taxAmount) {
+            const date = new Date().toLocaleString();
+            let itemsHtml = '';
+
+            items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>${item.quantity}x ${item.name}</td>
+                        <td class="text-end">₱${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            return `
+                <div class="receipt-header">
+                    <h3 style="margin:0; font-size: 16px;">CAFELINA</h3>
+                    <p style="margin:2px 0;">Order Receipt</p>
+                    <p style="margin:2px 0;">${date}</p>
+                </div>
+                <div class="receipt-divider"></div>
+                <div><strong>Customer / Order:</strong> ${orderName || 'Guest'}</div>
+                <div class="receipt-divider"></div>
+                <table class="receipt-table">
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                <div class="receipt-divider"></div>
+                <table class="receipt-table">
+                    <tr>
+                        <td>Tax:</td>
+                        <td class="text-end">₱${taxAmount.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total:</strong></td>
+                        <td class="text-end"><strong>₱${total.toFixed(2)}</strong></td>
+                    </tr>
+                </table>
+                <div class="receipt-divider"></div>
+                <div class="receipt-footer">
+                    <p style="margin:4px 0;">Thank you for dining with us!</p>
+                </div>
+            `;
+        }
+        /* ---------------- Submit order & Print Receipt ---------------- */
         const submitCartBtn = document.querySelector('.submitCart');
-        submitCartBtn.addEventListener('click', saveCart);
+        if (submitCartBtn) {
+            submitCartBtn.addEventListener('click', saveCart);
+        }
 
         async function saveCart() {
             const rows = document.querySelectorAll('.order-item');
@@ -793,13 +879,89 @@
 
             try {
                 await api.post('/cart/checkout', { items: cartData });
+
+                // Calculate totals for receipt
+                let subtotal = cartData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                let taxDecimal = @json($taxDecimal);
+                let taxAmount = subtotal * taxDecimal;
+                let grandTotal = subtotal + taxAmount;
+
+                // 1. Open receipt popup window
+                const printWindow = window.open('', '_blank', 'width=400,height=600');
+
+                if (printWindow) {
+                    const receiptHtmlContent = generateReceiptHtml(orderName, cartData, grandTotal, taxAmount);
+
+                    // 2. Write custom printable document into the popup
+                    printWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Print Receipt - ${orderName || 'Guest'}</title>
+                            <style>
+                                @page {
+                                    size: 80mm auto; /* Thermal receipt paper size */
+                                    margin: 0;       /* Removes browser headers, footers & extra blank pages */
+                                }
+
+                                html, body {
+                                    width: 80mm;
+                                    margin: 0;
+                                    padding: 8px 10px;
+                                    background: #fff;
+                                }
+
+                                body {
+                                    font-family: 'Courier New', Courier, monospace;
+                                    font-size: 12px;
+                                    color: #000;
+                                }
+
+                                .receipt-header, .receipt-footer { 
+                                    text-align: center; 
+                                }
+
+                                .receipt-divider { 
+                                    border-top: 1px dashed #000; 
+                                    margin: 6px 0; 
+                                }
+
+                                .receipt-table { 
+                                    width: 100%; 
+                                    border-collapse: collapse; 
+                                }
+
+                                .receipt-table td { 
+                                    padding: 2px 0; 
+                                }
+
+                                .text-end { 
+                                    text-align: right; 
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            ${receiptHtmlContent}
+                        </body>
+                        </html>
+                    `);
+
+                    printWindow.document.close();
+                    printWindow.focus();
+
+                    // 3. Trigger print and automatically close the popup
+                    setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                    }, 250);
+                }
+
                 clearCart();
                 document.querySelector('.orderNameInput').value = '';
                 loadKitchenOrders();
             } catch (error) {
                 if (error.response) {
                     console.error('Server Error Data:', error.response.data);
-                    console.error('Server Status Code:', error.response.status);
                 } else {
                     console.error('Failed to save cart:', error);
                 }
@@ -910,6 +1072,51 @@
 
         loadKitchenOrders();
     </script>
+    <script>
+        function generateReceiptHtml(orderName, items, total, taxAmount) {
+            const date = new Date().toLocaleString();
+            let itemsHtml = '';
 
+            items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>${item.quantity}x ${item.name}</td>
+                        <td class="text-end">₱${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            return `
+                <div class="receipt-header">
+                    <h3 style="margin:0; font-size: 16px;">CAFELINA</h3>
+                    <p style="margin:2px 0;">Order Receipt</p>
+                    <p style="margin:2px 0;">${date}</p>
+                </div>
+                <div class="receipt-divider"></div>
+                <div><strong>Customer / Order:</strong> ${orderName || 'Guest'}</div>
+                <div class="receipt-divider"></div>
+                <table class="receipt-table">
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                <div class="receipt-divider"></div>
+                <table class="receipt-table">
+                    <tr>
+                        <td>Tax:</td>
+                        <td class="text-end">₱${taxAmount.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total:</strong></td>
+                        <td class="text-end"><strong>₱${total.toFixed(2)}</strong></td>
+                    </tr>
+                </table>
+                <div class="receipt-divider"></div>
+                <div class="receipt-footer">
+                    <p style="margin:4px 0;">Thank you for dining with us!</p>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
