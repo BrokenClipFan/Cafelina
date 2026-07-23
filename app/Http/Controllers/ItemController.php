@@ -7,6 +7,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ItemController extends Controller
 {
@@ -42,14 +43,18 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
         ]);
+
+        $imagePath = $request->file('image')->store('items', 'public');
 
         $lastPosition = Item::max('position') ?? 0;
         Item::create([
             'name' => strtoupper($validated['name']),
             'category' => ucwords(strtolower($validated['category'])),
             'price' => $validated['price'],
-            'position' => $lastPosition + 1
+            'image_path' => $imagePath,
+            'position' => $lastPosition + 1,
         ]);
 
         return back()->with('success', 'Item saved');
@@ -95,9 +100,17 @@ class ItemController extends Controller
      */
     public function update(Request $request, $id)
     {
-        Item::where('id', $id)->update([
-            'name' => $request->name,
-            'price' => $request->price
+        $item = Item::findOrFail($id);
+
+        if($request->hasFile('image'))
+            $path = $request->file('image')->store('items', 'public');
+        else 
+            $path = $item->image_path;
+
+        $item->update([
+            'name' => Str::upper($request->name),
+            'price' => $request->price,
+            'image_path' => $path
         ]);
 
         return response()->json(['message' => 'Updated successfully']);

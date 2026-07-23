@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Cafelina — Live Menu Editor</title>
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -216,7 +217,7 @@
             flex: 1;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 14px;
             align-content: start;
             padding: 4px 4px 4px 0;
@@ -228,21 +229,64 @@
             position: relative;
             border: 1.5px solid var(--paper-warm);
             border-radius: 12px;
-            padding: 16px;
-            height: 100%;
+            height: 220px; /* fixed card height */
             background: #fff;
             cursor: grab;
-            transition: border-color 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* pushes text content to bottom */
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .item-card:active { cursor: grabbing; }
-        .item-card:hover { border-color: var(--caramel); }
+        .item-card:hover { 
+            border-color: var(--caramel); 
+            transform: translateY(-2px);
+        }
 
-        .item-card .name { font-weight: 600; font-size: 1.02rem; margin-bottom: 2px; }
-        .item-card .category { font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 14px; }
+        /* Background image filling the entire card */
+        .item-card-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* Dark gradient overlay + content container */
+        .item-card-content {
+            position: relative;
+            z-index: 2;
+            padding: 12px;
+            background: linear-gradient(to top, rgb(0, 0, 0) 0%, rgba(0, 0, 0, 0.719) 60%, rgba(0, 0, 0, 0) 100%);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        .item-card .name { 
+            font-weight: 600; 
+            font-size: 0.98rem; 
+            margin-bottom: 2px; 
+            line-height: 1.2; 
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 1);
+        }
+
+        .item-card .category { 
+            font-size: 0.76rem; 
+            color: rgba(255, 255, 255, 0.8); 
+            margin-bottom: 6px; 
+        }
+
         .item-card .price {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            color: var(--caramel-deep);
+            color: #F6E7C9; /* warm caramel tint for contrast */
+            font-size: 1.05rem;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .item-actions {
@@ -256,6 +300,7 @@
             gap: 10px;
             opacity: 0;
             transition: opacity 0.2s ease;
+            z-index: 2;
         }
         .item-card:hover .item-actions { opacity: 1; }
 
@@ -283,7 +328,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 120px;
+            min-height: 180px;
             border-radius: 12px;
             font-weight: 700;
         }
@@ -295,6 +340,25 @@
             opacity: 0.4;
             background: var(--caramel-tint);
             border: 2px dashed var(--caramel) !important;
+        }
+
+        /* ---------------- Image preview boxes ---------------- */
+        .image-preview-container {
+            width: 100%;
+            height: 140px;
+            border: 2px dashed var(--paper-warm);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: var(--paper);
+            margin-top: 8px;
+        }
+        .image-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* ---------------- Icon picker (inside Add Category modal) ---------------- */
@@ -484,15 +548,26 @@
             <div class="item-grid" id="itemSortable">
 
                 @foreach($items as $item)
+                    @php
+                        $itemImg = asset('storage/' . $item->image_path);
+                    @endphp
                     <div class="categoryItems {{ $item->category !== $firstCategory ? 'd-none' : '' }}"
                          data-id="{{ $item->id }}"
-                         data-category="{{ $item->category }}">
+                         data-category="{{ $item->category }}"
+                         data-image="{{ $itemImg }}">
 
                         <div class="item-card">
-                            <h6 class="name item-name-display">{{ $item->name }}</h6>
-                            <p class="category">{{ $item->category }}</p>
-                            <div class="price item-price-display">₱{{ $item->price }}</div>
+                            <!-- Full-bleed background image -->
+                            <img src="{{ $itemImg }}" alt="{{ $item->name }}" class="item-card-img item-image-display">
 
+                            <!-- Content overlay container -->
+                            <div class="item-card-content">
+                                <h6 class="name item-name-display">{{ $item->name }}</h6>
+                                <p class="category">{{ $item->category }}</p>
+                                <div class="price item-price-display">₱{{ $item->price }}</div>
+                            </div>
+
+                            <!-- Action buttons remain on top on hover -->
                             <div class="item-actions">
                                 <button class="icon-circle-btn edit-item-btn"><i class="bi bi-pencil"></i></button>
                                 <button class="icon-circle-btn delete-item-btn"><i class="bi bi-trash"></i></button>
@@ -597,19 +672,26 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="itemForm" action="{{ route('item.store') }}" method="POST">
+                <form id="itemForm" action="{{ route('item.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="category" id="categoryInput" value="{{ $firstCategory }}">
                     <div class="modal-body p-4">
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="itemName" class="form-label">Item name</label>
                             <input type="text" name="name" class="form-control p-2 rounded" id="itemName" placeholder="e.g. Caramel Macchiato" required>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label for="itemPrice" class="form-label">Price</label>
                             <div class="input-group rounded overflow-hidden">
                                 <span class="input-group-text fw-bold">₱</span>
                                 <input name="price" type="number" class="form-control" id="itemPrice" placeholder="0.00" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="itemImage" class="form-label">Food Image</label>
+                            <input name="image" type="file" class="form-control" id="itemImage" accept="image/*">
+                            <div class="image-preview-container mt-2 d-none" id="createImagePreviewBox">
+                                <img src="" id="createImagePreview" alt="Image preview">
                             </div>
                         </div>
                     </div>
@@ -631,18 +713,25 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="editItemForm">
+                <form id="editItemForm" enctype="multipart/form-data">
                     <input type="hidden" name="id" id="editItemId">
                     <div class="modal-body p-4">
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="editItemName" class="form-label">Item name</label>
                             <input type="text" name="name" class="form-control p-2 rounded" id="editItemName" required>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label for="editItemPrice" class="form-label">Price</label>
                             <div class="input-group rounded overflow-hidden">
                                 <span class="input-group-text fw-bold">₱</span>
                                 <input name="price" type="number" class="form-control" id="editItemPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="editItemImage" class="form-label">Food Image</label>
+                            <input name="image" type="file" class="form-control" id="editItemImage" accept="image/*">
+                            <div class="image-preview-container mt-2" id="editImagePreviewBox">
+                                <img src="" id="editImagePreview" alt="Current image">
                             </div>
                         </div>
                     </div>
@@ -699,6 +788,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const api = {
             get: async (url) => {
@@ -706,26 +796,38 @@
                 return res.json();
             },
             post: async (url, data) => {
+                const isFormData = data instanceof FormData;
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                };
+                if (!isFormData) headers['Content-Type'] = 'application/json';
+
                 const res = await fetch(url, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    },
-                    body: JSON.stringify(data),
+                    headers,
+                    body: isFormData ? data : JSON.stringify(data),
                 });
                 return res.json();
             },
-            update: async (url, data, method = 'PUT') => {
+            update: async (url, data) => {
+                const isFormData = data instanceof FormData;
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                };
+                
+                // If uploading file via FormData, standard POST with _method=PUT or POST endpoint is best
+                if (isFormData) {
+                    data.append('_method', 'PUT');
+                } else {
+                    headers['Content-Type'] = 'application/json';
+                }
+
                 const res = await fetch(url, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    },
-                    body: JSON.stringify(data),
+                    method: isFormData ? 'POST' : 'PUT',
+                    headers,
+                    body: isFormData ? data : JSON.stringify(data),
                 });
                 return res.json();
             },
@@ -778,6 +880,28 @@
             }
         });
 
+        // Live preview for Create Item Image
+        document.getElementById('itemImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const box = document.getElementById('createImagePreviewBox');
+            const img = document.getElementById('createImagePreview');
+            if (file) {
+                img.src = URL.createObjectURL(file);
+                box.classList.remove('d-none');
+            } else {
+                box.classList.add('d-none');
+            }
+        });
+
+        // Live preview for Edit Item Image
+        document.getElementById('editItemImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const img = document.getElementById('editImagePreview');
+            if (file) {
+                img.src = URL.createObjectURL(file);
+            }
+        });
+
         // Open + populate the edit-item modal
         document.getElementById('itemSortable').addEventListener('click', function (e) {
             const editBtn = e.target.closest('.edit-item-btn');
@@ -787,10 +911,12 @@
             const itemId = itemCard.dataset.id;
             const itemName = itemCard.querySelector('.item-name-display').innerText;
             const itemPrice = itemCard.querySelector('.item-price-display').innerText.replace('₱', '').trim();
+            const itemImage = itemCard.dataset.image || itemCard.querySelector('.item-image-display')?.src;
 
             document.getElementById('editItemId').value = itemId;
-            document.getElementById('editItemName').value = itemName;
+            document.getElementById('editItemName').value = itemName.toUpperCase();
             document.getElementById('editItemPrice').value = itemPrice;
+            document.getElementById('editImagePreview').src = itemImage;
 
             const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
             editModal.show();
@@ -801,18 +927,21 @@
             e.preventDefault();
 
             const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
-            const itemId = data.id;
-
+            const itemId = formData.get('id');
             const categoryItem = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
 
             try {
-                await api.update(`/items/${itemId}/update`, data);
+                const response = await api.update(`/items/${itemId}/update`, formData);
 
                 bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
 
-                categoryItem.querySelector('.item-name-display').textContent = data.name;
-                categoryItem.querySelector('.item-price-display').textContent = `₱${data.price}`;
+                categoryItem.querySelector('.item-name-display').textContent = formData.get('name');
+                categoryItem.querySelector('.item-price-display').textContent = `₱${parseFloat(formData.get('price')).toFixed(2)}`;
+                
+                if (response.image_path) {
+                    categoryItem.querySelector('.item-image-display').src = response.image_path;
+                    categoryItem.dataset.image = response.image_path;
+                }
             } catch (error) {
                 console.error('Error updating item:', error);
             }
@@ -850,7 +979,7 @@
             if (!deleteBtn) return;
 
             const category = deleteBtn.closest('.category-wrapper');
-            document.getElementById('deleteItemId').value = category.dataset.id;
+            document.getElementById('deleteCategoryId').value = category.dataset.id;
             document.getElementById('deleteCategoryName').textContent = category.dataset.category;
 
             new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
@@ -859,7 +988,7 @@
         // Confirm category delete
         document.getElementById('deleteCategoryForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            const categoryId = document.getElementById('deleteItemId').value;
+            const categoryId = document.getElementById('deleteCategoryId').value;
 
             try {
                 await api.delete(`/category/${categoryId}/delete`);

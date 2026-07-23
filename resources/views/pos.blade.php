@@ -92,6 +92,7 @@
             overflow-x: auto;
             padding-bottom: 12px;
             margin-bottom: 8px;
+            scroll-behavior: smooth;
         }
         .category-rail::-webkit-scrollbar { height: 5px; }
         .category-rail::-webkit-scrollbar-thumb { background: var(--paper-warm); border-radius: 4px; }
@@ -124,7 +125,7 @@
             flex: 1;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 14px;
             align-content: start;
             padding: 4px 4px 4px 0;
@@ -133,9 +134,12 @@
         .menu-item {
             border: 1.5px solid var(--paper-warm);
             border-radius: 12px;
-            padding: 16px;
+            padding: 12px;
             cursor: pointer;
             background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .menu-item:hover {
@@ -147,15 +151,24 @@
             outline: 2px solid var(--caramel-deep);
             outline-offset: 2px;
         }
+        .menu-item-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background-color: var(--paper);
+        }
         .menu-item .name {
             font-weight: 600;
-            font-size: 1.02rem;
+            font-size: 0.98rem;
             margin-bottom: 2px;
+            line-height: 1.2;
         }
         .menu-item .category {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: var(--ink-soft);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
         .menu-item .price {
             font-family: 'Space Grotesk', sans-serif;
@@ -542,6 +555,14 @@
         const categoryRail = document.querySelector('.category-rail');
         const itemGrid = document.querySelector('.item-grid');
 
+        /* Enable horizontal mouse scroll on category rail */
+        categoryRail.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                categoryRail.scrollLeft += e.deltaY;
+            }
+        });
+
         function categoryButtonHtml(cat, isFirst) {
             return `
                 <button class="category-btn"
@@ -565,9 +586,14 @@
             card.dataset.name = item.name;
             card.dataset.price = item.price;
 
+            const imgSrc = item.image_path || 'https://via.placeholder.com/150?text=No+Image';
+
             card.innerHTML = `
-                <div class="name">${item.name}</div>
-                <div class="category">${item.category}</div>
+                <div>
+                    <img src="${imgSrc}" alt="${item.name}" class="menu-item-img" onerror="this.src='https://via.placeholder.com/150?text=No+Image';">
+                    <div class="name">${item.name}</div>
+                    <div class="category">${item.category}</div>
+                </div>
                 <div class="price">₱${Number(item.price).toFixed(2)}</div>
             `;
 
