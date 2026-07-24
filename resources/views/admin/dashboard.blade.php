@@ -294,45 +294,60 @@
                 </div>
             </div>
 
-            <!-- Active Employees Roster Widget -->
+            <!-- Employees Roster Widget (Online First) -->
             <div class="col-12 col-lg-5">
                 <div class="card analytic-card h-100 p-4 d-flex flex-column justify-content-between">
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="fw-bold m-0">
-                                <i class="fa-solid fa-circle-dot me-2 text-success animate-pulse"></i>Active Employees
+                                <i class="fa-solid fa-users me-2" style="color: var(--caramel-deep);"></i>Staff Directory
                             </h5>
                             <span class="badge bg-success-subtle text-success px-2 py-1 rounded fw-semibold" style="font-size: 0.8rem;">
-                                {{ $onlineEmployees->count() }} Online
+                                {{ $employees->where('online_status', 1)->count() }} Online Now
                             </span>
                         </div>
 
-                        <div class="d-flex flex-column gap-3 overflow-y-auto mb-3" style="max-height: 220px;">
-                            @forelse($onlineEmployees as $employee)
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background-color: rgba(234, 217, 183, 0.2); border: 1px solid rgba(234, 217, 183, 0.4);">
+                        <div class="d-flex flex-column gap-3 overflow-y-auto mb-3" style="max-height: 280px;">
+                            @forelse($employees as $employee)
+                                @php
+                                    // Check if online (supports boolean, integer 1/0, or string values)
+                                    $isOnline = (bool) $employee->online_status;
+                                @endphp
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded" 
+                                    style="background-color: rgba(234, 217, 183, 0.2); border: 1px solid rgba(234, 217, 183, 0.4);">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="position-relative">
                                             <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" 
                                                 style="width: 40px; height: 40px; background-color: var(--espresso); font-size: 0.9rem;">
                                                 {{ strtoupper(substr($employee->name, 0, 2)) }}
                                             </div>
-                                            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" title="Online Now"></span>
+                                            @if($isOnline)
+                                                <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle animate-pulse" 
+                                                    title="Online Now"></span>
+                                            @else
+                                                <span class="position-absolute bottom-0 end-0 p-1 bg-secondary border border-white rounded-circle opacity-75" 
+                                                    title="Offline"></span>
+                                            @endif
                                         </div>
                                         <div>
                                             <h6 class="m-0 fw-bold text-capitalize" style="font-size: 0.95rem;">{{ $employee->name }}</h6>
                                             <small class="text-muted" style="font-size: 0.78rem;">
-                                                <i class="fa-regular fa-clock me-1"></i>Active Shift
+                                                @if($isOnline)
+                                                    <i class="fa-solid fa-circle text-success me-1" style="font-size: 0.5rem;"></i>Active Shift
+                                                @else
+                                                    <i class="fa-regular fa-clock me-1"></i>Offline
+                                                @endif
                                             </small>
                                         </div>
                                     </div>
                                     <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
-                                        {{ $employee->role ?? 'Staff' }}
+                                        {{ $employee->role ?? 'Employee' }}
                                     </span>
                                 </div>
                             @empty
                                 <div class="text-center py-4 text-muted">
                                     <i class="fa-solid fa-user-slash d-block mb-2 fs-4" style="color: var(--ink-soft);"></i>
-                                    No employees currently active online.
+                                    No employees registered in database.
                                 </div>
                             @endforelse
                         </div>
@@ -340,7 +355,7 @@
 
                     <div class="pt-2 border-top" style="border-color: var(--paper-warm) !important;">
                         <a href="{{ Route::has('admin.employees') ? route('admin.employees') : '#' }}" class="btn btn-theme-outline w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                            <i class="fa-solid fa-users-viewfinder"></i> View All Employees
+                            <i class="fa-solid fa-users-viewfinder"></i> Manage Employees
                         </a>
                     </div>
                 </div>

@@ -44,9 +44,9 @@ class SaleController extends Controller
 
         $paymentMethods = $salesService->getPaymentMethodUsage();
 
-        $onlineEmployees = User::where('role', 'employee') // optional role filter
-        ->where('online_status', true) // or ->where('last_seen_at', '>=', now()->subMinutes(5))
-        ->take(4)
+        $employees = User::orderByDesc('online_status') 
+        ->orderBy('name', 'asc')       
+        ->take(10)
         ->get();
 
         return view('admin.dashboard', compact(
@@ -60,7 +60,7 @@ class SaleController extends Controller
             'monthly',
             'yearly',
             'paymentMethods',
-            'onlineEmployees'
+            'employees'
         ));
     }
 
