@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Cafelina') }}</title>
+    <title>{{ config('app.name', 'Cafelinea') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        /* Cafelina token system, shared with every other screen in the app. */
+        /* Cafelinea token system, shared with every other screen in the app. */
         :root {
             --paper: #F7EFE0;
             --paper-warm: #EAD9B7;
@@ -140,7 +140,7 @@
                                         <path d="M2 3a1 1 0 0 0-1 1v2.5a4.5 4.5 0 0 0 4.5 4.5h.05a2.5 2.5 0 0 0 4.9 0H10.5A4.5 4.5 0 0 0 15 6.5V6a2 2 0 0 0-2-2h-.5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1zm10.5 2H13a1 1 0 0 1 1 1v.5a3.5 3.5 0 0 1-1.5 2.87V5zM3 3h8v5.5A3.5 3.5 0 0 1 7.5 12h-2A3.5 3.5 0 0 1 2 8.5V3z"/>
                                     </svg>
                                 </span>
-                                <span class="cf-display text-white font-semibold text-lg">Cafelina</span>
+                                <span class="cf-display text-white font-semibold text-lg">Cafelinea</span>
                             </a>
                         </div>
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Cafelina POS</title>
+    <title>Cafelinea POS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
 
     <style>
         /* ============================================================
-           Cafelina POS — shares the cafe token system from the order
+           Cafelinea POS — shares the cafe token system from the order
            board: paper/espresso palette, Fraunces + Space Grotesk.
            The order panel is styled like a printed receipt (dot-leader
            rows), which is literally what it's building.
@@ -514,7 +514,7 @@
     <div class="pos-shell">
 
         <section class="panel panel--menu">
-            <h4 class="panel-title">Cafelina POS</h4>
+            <h4 class="panel-title">Cafelinea POS</h4>
             <p class="panel-sub">Tap an item to add it to the order</p>
 
             <div class="category-rail"><!-- category buttons render here --></div>
@@ -807,47 +807,83 @@
     </script>
 
     <script>
-        function generateReceiptHtml(orderName, items, total, taxAmount) {
-            const date = new Date().toLocaleString();
-            let itemsHtml = '';
+        function generateReceiptHtml(orderName, orderId, items, grandTotal, taxAmount) {
+            // Calculate subtotal prior to tax inclusion
+            const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            // Format timestamp: MM/DD/YYYY hh:mm AM/PM
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
+            const formattedTime = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            const fullTimestamp = `${formattedDate} ${formattedTime}`;
 
+            let itemsRows = '';
             items.forEach(item => {
-                itemsHtml += `
+                const itemLineTotal = (item.price * item.quantity).toFixed(2);
+                itemsRows += `
                     <tr>
-                        <td>${item.quantity}x ${item.name}</td>
-                        <td class="text-end">₱${(item.price * item.quantity).toFixed(2)}</td>
+                        <td class="text-start">${item.quantity}x ${item.name}</td>
+                        <td class="text-end">₱${itemLineTotal}</td>
                     </tr>
                 `;
             });
 
             return `
-                <div class="receipt-header">
-                    <h3 style="margin:0; font-size: 16px;">CAFELINA</h3>
-                    <p style="margin:2px 0;">Order Receipt</p>
-                    <p style="margin:2px 0;">${date}</p>
-                </div>
-                <div class="receipt-divider"></div>
-                <div><strong>Customer / Order:</strong> ${orderName || 'Guest'}</div>
-                <div class="receipt-divider"></div>
-                <table class="receipt-table">
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                </table>
-                <div class="receipt-divider"></div>
-                <table class="receipt-table">
-                    <tr>
-                        <td>Tax:</td>
-                        <td class="text-end">₱${taxAmount.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total:</strong></td>
-                        <td class="text-end"><strong>₱${total.toFixed(2)}</strong></td>
-                    </tr>
-                </table>
-                <div class="receipt-divider"></div>
-                <div class="receipt-footer">
-                    <p style="margin:4px 0;">Thank you for dining with us!</p>
+                <div class="receipt-container">
+                    <div class="receipt-header">
+                        <h2 class="brand-title">CAFELINEA</h2>
+                        <p class="store-info">Pangdan City of Naga, Cebu</p>
+                        <p class="store-info">Tel: 091231233</p>
+                    </div>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <div class="receipt-meta">
+                        <div>Date: ${fullTimestamp}</div>
+                        <div>Order: #${orderId || orderName || 'REC-PREVIEW'}</div>
+                    </div>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <table class="receipt-table">
+                        <tbody>
+                            ${itemsRows}
+                        </tbody>
+                    </table>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <table class="receipt-summary">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-end">₱${subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Tax (${(@json($taxDecimal) * 100).toFixed(0)}%):</td>
+                            <td class="text-end">₱${taxAmount.toFixed(2)}</td>
+                        </tr>
+                    </table>
+
+                    <table class="receipt-total">
+                        <tr>
+                            <td class="total-label">TOTAL:</td>
+                            <td class="total-amount text-end">₱${grandTotal.toFixed(2)}</td>
+                        </tr>
+                    </table>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <div class="receipt-footer">
+                        <p>Thank you for dining with us!</p>
+                    </div>
                 </div>
             `;
         }
@@ -891,53 +927,89 @@
                 const printWindow = window.open('', '_blank', 'width=400,height=600');
                 
                 if (printWindow) {
+                    // Make sure all parameters are passed into generateReceiptHtml
                     const receiptHtmlContent = generateReceiptHtml(orderName, orderId, cartData, grandTotal, taxAmount);
 
-                    // 2. Write custom printable document into the popup
                     printWindow.document.write(`
                         <!DOCTYPE html>
                         <html>
                         <head>
-                            <title>Print Receipt - ${orderName || 'Guest'}</title>
+                            <title>Receipt - ${orderName || 'Guest'}</title>
                             <style>
                                 @page {
-                                    size: 80mm auto; /* Thermal receipt paper size */
-                                    margin: 0;       /* Removes browser headers, footers & extra blank pages */
-                                }
-
-                                html, body {
-                                    width: 80mm;
+                                    size: 80mm auto;
                                     margin: 0;
-                                    padding: 8px 10px;
-                                    background: #fff;
                                 }
-
+                                * {
+                                    box-sizing: border-box;
+                                }
                                 body {
+                                    margin: 0;
+                                    padding: 10px;
+                                    background: #ffffff;
                                     font-family: 'Courier New', Courier, monospace;
+                                    font-size: 13px;
+                                    color: #000000;
+                                }
+                                .receipt-container {
+                                    width: 100%;
+                                    max-width: 76mm;
+                                    margin: 0 auto;
+                                    padding: 10px;
+                                    border: 1px dashed #000000;
+                                    border-radius: 8px;
+                                }
+                                .receipt-header {
+                                    text-align: center;
+                                    margin-bottom: 4px;
+                                }
+                                .brand-title {
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                    margin: 0 0 2px 0;
+                                    letter-spacing: 1px;
+                                }
+                                .store-info {
+                                    margin: 1px 0;
                                     font-size: 12px;
-                                    color: #000;
                                 }
-
-                                .receipt-header, .receipt-footer { 
-                                    text-align: center; 
+                                .receipt-divider {
+                                    text-align: center;
+                                    overflow: hidden;
+                                    white-space: nowrap;
+                                    font-size: 11px;
+                                    margin: 6px 0;
+                                    letter-spacing: -1px;
                                 }
-
-                                .receipt-divider { 
-                                    border-top: 1px dashed #000; 
-                                    margin: 6px 0; 
+                                .receipt-meta div {
+                                    margin: 2px 0;
                                 }
-
-                                .receipt-table { 
-                                    width: 100%; 
-                                    border-collapse: collapse; 
+                                .receipt-table, .receipt-summary, .receipt-total {
+                                    width: 100%;
+                                    border-collapse: collapse;
                                 }
-
-                                .receipt-table td { 
-                                    padding: 2px 0; 
+                                .receipt-table td, .receipt-summary td, .receipt-total td {
+                                    padding: 3px 0;
+                                    vertical-align: top;
                                 }
+                                .text-start { text-align: left; }
+                                .text-end { text-align: right; }
 
-                                .text-end { 
-                                    text-align: right; 
+                                .receipt-total {
+                                    margin-top: 4px;
+                                }
+                                .total-label {
+                                    font-size: 15px;
+                                    font-weight: 800;
+                                }
+                                .total-amount {
+                                    font-size: 16px;
+                                    font-weight: 800;
+                                }
+                                .receipt-footer {
+                                    text-align: center;
+                                    margin-top: 8px;
+                                    font-size: 12px;
                                 }
                             </style>
                         </head>
@@ -950,7 +1022,6 @@
                     printWindow.document.close();
                     printWindow.focus();
 
-                    // 3. Trigger print and automatically close the popup
                     setTimeout(() => {
                         printWindow.print();
                         printWindow.close();
@@ -1074,48 +1145,79 @@
         loadKitchenOrders();
     </script>
     <script>
-        function generateReceiptHtml(orderName, orderId, items, total, taxAmount) {
-            const date = new Date().toLocaleString();
-            let itemsHtml = '';
+        function generateReceiptHtml(orderName, orderId, items, grandTotal, taxAmount) {
+            // Subtotal before tax
+            const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            // Format date as MM/DD/YYYY hh:mm AM/PM
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const fullTimestamp = `${month}/${day}/${year} ${timeStr}`;
 
+            let itemsRows = '';
             items.forEach(item => {
-                itemsHtml += `
+                const lineTotal = (item.price * item.quantity).toFixed(2);
+                itemsRows += `
                     <tr>
-                        <td>${item.quantity}x ${item.name}</td>
-                        <td class="text-end">₱${(item.price * item.quantity).toFixed(2)}</td>
+                        <td class="text-start">${item.quantity}x ${item.name}</td>
+                        <td class="text-end">₱${lineTotal}</td>
                     </tr>
                 `;
             });
 
+            const taxPercent = (@json($taxDecimal) * 100).toFixed(0);
+
             return `
-                <div class="receipt-header">
-                    <h3 style="margin:0; font-size: 16px;">CAFELINA</h3>
-                    <p style="margin:2px 0;">Order Receipt</p>
-                    <p style="margin:2px 0;">${date}</p>
-                    <p style="margin:2px 0;">Order ID: ${orderId}</p>
-                </div>
-                <div class="receipt-divider"></div>
-                <div><strong>Order Name:</strong> ${orderName}</div>
-                <div class="receipt-divider"></div>
-                <table class="receipt-table">
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                </table>
-                <div class="receipt-divider"></div>
-                <table class="receipt-table">
-                    <tr>
-                        <td>Tax:</td>
-                        <td class="text-end">₱${taxAmount.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total:</strong></td>
-                        <td class="text-end"><strong>₱${total.toFixed(2)}</strong></td>
-                    </tr>
-                </table>
-                <div class="receipt-divider"></div>
-                <div class="receipt-footer">
-                    <p style="margin:4px 0;">Thank you for dining with us!</p>
+                <div class="receipt-container">
+                    <div class="receipt-header">
+                        <h2 class="brand-title">CAFELINEA</h2>
+                        <p class="store-info">Pangdan City of Naga, Cebu</p>
+                        <p class="store-info">Tel: 091231233</p>
+                    </div>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <div class="receipt-meta">
+                        <div>Date: ${fullTimestamp}</div>
+                        <div>Order: #${orderId || orderName || 'REC-PREVIEW'}</div>
+                    </div>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <table class="receipt-table">
+                        <tbody>
+                            ${itemsRows}
+                        </tbody>
+                    </table>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <table class="receipt-summary">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-end">₱${subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Tax (${taxPercent}%):</td>
+                            <td class="text-end">₱${taxAmount.toFixed(2)}</td>
+                        </tr>
+                    </table>
+
+                    <table class="receipt-total">
+                        <tr>
+                            <td class="total-label">TOTAL:</td>
+                            <td class="total-amount text-end">₱${grandTotal.toFixed(2)}</td>
+                        </tr>
+                    </table>
+
+                    <div class="receipt-divider">-----------------------------------</div>
+
+                    <div class="receipt-footer">
+                        <p>Thank you for dining with us!</p>
+                    </div>
                 </div>
             `;
         }

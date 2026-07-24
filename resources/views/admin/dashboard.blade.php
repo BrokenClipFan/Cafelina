@@ -37,6 +37,15 @@
         font-family: 'Fraunces', serif;
     }
 
+    /* Fixed Navigation Header Bar */
+    .admin-navbar {
+        background-color: #ffffff;
+        border: 1px solid var(--paper-warm);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(64, 41, 27, 0.06);
+        padding: 1rem 1.5rem;
+    }
+
     .analytic-card {
         background-color: #ffffff;
         border: 1px solid var(--paper-warm);
@@ -70,6 +79,14 @@
     .btn-theme-primary:hover, .btn-theme-primary.active {
         background-color: var(--caramel-deep);
         color: #fff;
+    }
+
+    .btn-theme-danger {
+        background-color: #dc3545 !important;
+        border: none;
+    }
+    .btn-theme-danger:hover {
+        background-color: #ff0019 !important;
     }
 
     .btn-theme-outline {
@@ -125,24 +142,54 @@
         100% { transform: scale(0.95); opacity: 0.5; }
     }
     .animate-pulse { animation: pulse 2s infinite ease-in-out; }
+
+    /* Printable Report Styling */
+    @media print {
+        body * { visibility: hidden; }
+        #printableArea, #printableArea * { visibility: visible; }
+        #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+        .no-print { display: none !important; }
+    }
 </style>
 
 <div class="admin-wrapper min-vh-100 p-4">
     <div class="container-fluid">
 
-        <!-- Header -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-            <div>
-                <h1 class="fw-bold m-0">Advanced Sales Analytics</h1>
-                <p class="mb-0" style="color: var(--ink-soft);">Deep dive into item performance and revenue trends.</p>
+        <!-- Fixed Header / Navbar -->
+        <div class="admin-navbar mb-4 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                     style="width: 52px; height: 52px; background-color: var(--espresso); color: var(--caramel-tint);">
+                    <i class="fa-solid fa-mug-hot fs-4"></i>
+                </div>
+                <div>
+                    <h1 class="fw-bold fs-3 m-0" style="color: var(--espresso);">Cafelinea Analytics</h1>
+                    <p class="mb-0 small" style="color: var(--ink-soft);">Deep dive into item performance, transactions, and revenue trends.</p>
+                </div>
             </div>
-            <div class="d-flex gap-2 flex-wrap">
+
+            <!-- Navbar Control Actions -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Print Report Modal Trigger -->
+                <button type="button" class="btn btn-theme-outline shadow-sm" data-bs-toggle="modal" data-bs-target="#printReportModal">
+                    <i class="fa-solid fa-print me-2" style="color: var(--caramel-deep);"></i> Print Report
+                </button>
+
                 <a href="{{ url('/') }}" class="btn btn-theme-outline shadow-sm">
-                    <i class="fa-solid fa-house me-2"></i> Homepage
+                    <i class="fa-solid fa-house me-2"></i> POS
                 </a>
                 <a href="{{ Route::has('orders.edit_mode') ? route('orders.edit_mode') : '#' }}" class="btn btn-theme-primary shadow-sm">
-                    <i class="fa-solid fa-pen-to-square me-2"></i> Edit Order Mode
+                    <i class="fa-solid fa-pen-to-square me-2"></i> Edit Mode
                 </a>
+                <a href="{{ Route::has('admin.settings') ? route('admin.settings') : '#' }}" class="btn btn-theme-primary shadow-sm">
+                    <i class="fa-solid fa-gear me-2"></i> Settings
+                </a>
+                <form method="POST" action="{{ route('logout') }}" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn btn-theme-danger text-white shadow-sm fw-semibold">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -188,7 +235,6 @@
                 <div class="card analytic-card h-100 p-4">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-2">
                         <h5 class="fw-bold m-0" id="trendChartTitle">Periodic Performance Trend (Yearly)</h5>
-                        <!-- Timeframe Controls integrated directly to chart container -->
                         <div class="btn-group time-filter-group shadow-sm" role="group" id="timeframeButtonGroup">
                             <button type="button" onclick="changeChartPeriod('daily', this)" class="btn btn-outline-secondary btn-sm">Daily</button>
                             <button type="button" onclick="changeChartPeriod('monthly', this)" class="btn btn-outline-secondary btn-sm">Monthly</button>
@@ -208,30 +254,27 @@
                         <canvas id="categoryChart"></canvas>
                     </div>
                     <div class="text-center mt-3 small" style="color: var(--ink-soft);">
-                        Based on dynamic <code>purchase_items.category</code> data metrics
+                        Based on dynamic Category metrics
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Row 2: Popular Items & Payment Method Tables -->
-        <div class="row g-4">
+        <!-- Row 2: Popular Items & Online Staff Grid -->
+        <div class="row g-4 mb-4">
             <div class="col-12 col-lg-7">
                 <div class="card analytic-card h-100 p-4">
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-2">
                         <h5 class="fw-bold m-0"><i class="fa-solid fa-fire me-2" style="color: var(--stamp);"></i>Most Popular Items</h5>
-                        <!-- Search Box Filter running AJAX requests -->
                         <div class="input-group input-group-sm" style="max-width: 220px;">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                             <input type="text" id="tableFilterInput" onkeyup="handleSearchInput()" class="form-control border-start-0" placeholder="Search database...">
                         </div>
                     </div>
                     
-                    <!-- ⬇️ THIS WRAPPER FIXES THE OVERFLOW HEIGHT AND MAKES IT SCROLLABLE ⬇️ -->
                     <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
                         <table class="table table-custom m-0" id="popularItemsTable">
-                            <!-- Keep header sticky so it stays visible while scrolling -->
-                            <thead style="position: sticky; top: 0; bg-color: #ffffff; z-index: 1; background: white;">
+                            <thead style="position: sticky; top: 0; z-index: 1; background: white;">
                                 <tr>
                                     <th>Item Name</th>
                                     <th>Category</th>
@@ -251,7 +294,7 @@
                 </div>
             </div>
 
-            <!-- Dynamic Active Employees Roster Widget -->
+            <!-- Active Employees Roster Widget -->
             <div class="col-12 col-lg-5">
                 <div class="card analytic-card h-100 p-4 d-flex flex-column justify-content-between">
                     <div>
@@ -264,12 +307,10 @@
                             </span>
                         </div>
 
-                        <!-- Employee List Container -->
                         <div class="d-flex flex-column gap-3 overflow-y-auto mb-3" style="max-height: 220px;">
                             @forelse($onlineEmployees as $employee)
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background-color: rgba(234, 217, 183, 0.2); border: 1px solid rgba(234, 217, 183, 0.4);">
                                     <div class="d-flex align-items-center gap-3">
-                                        <!-- Status Indicator Avatar -->
                                         <div class="position-relative">
                                             <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" 
                                                 style="width: 40px; height: 40px; background-color: var(--espresso); font-size: 0.9rem;">
@@ -277,7 +318,6 @@
                                             </div>
                                             <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" title="Online Now"></span>
                                         </div>
-                                        <!-- Meta Data -->
                                         <div>
                                             <h6 class="m-0 fw-bold text-capitalize" style="font-size: 0.95rem;">{{ $employee->name }}</h6>
                                             <small class="text-muted" style="font-size: 0.78rem;">
@@ -298,49 +338,136 @@
                         </div>
                     </div>
 
-                    <!-- Sticky Footer Action Button -->
                     <div class="pt-2 border-top" style="border-color: var(--paper-warm) !important;">
-                        <a href="{{ route('admin.employees')}}" class="btn btn-theme-outline w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                        <a href="{{ Route::has('admin.employees') ? route('admin.employees') : '#' }}" class="btn btn-theme-outline w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm">
                             <i class="fa-solid fa-users-viewfinder"></i> View All Employees
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Row 3: Receipt Lookup Card -->
-    <div class="row g-4 mt-2">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="card analytic-card p-4">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                        style="width: 48px; height: 48px; background-color: var(--caramel-tint); color: var(--caramel-deep);">
-                        <i class="fa-solid fa-receipt fs-4"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold m-0">Receipt Order Lookup</h5>
-                        <small style="color: var(--ink-soft);">Find order receipts to inspect items or manage refunds.</small>
+
+        <!-- Row 3: Perfectly Aligned Receipt Lookup Card (Full Width Span) -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card analytic-card p-4">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                                style="width: 48px; height: 48px; background-color: var(--caramel-tint); color: var(--caramel-deep);">
+                                <i class="fa-solid fa-receipt fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold m-0">Receipt Order Lookup</h5>
+                                <small style="color: var(--ink-soft);">Inspect specific customer transactions or process full refunds.</small>
+                            </div>
+                        </div>
+
+                        <!-- GET / POST Form Navigating to Details View -->
+                        <form action="{{ Route::has('receipt.search') ? route('receipt.search') : '#' }}" method="POST" class="d-flex gap-2 flex-grow-1" style="max-width: 500px;">
+                            @csrf
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </span>
+                                <input type="text" name="search" class="form-control border-start-0" placeholder="Enter Order # or Receipt ID..." required>
+                            </div>
+                            <button type="submit" class="btn btn-theme-primary px-4 d-flex align-items-center gap-2 flex-shrink-0">
+                                <span>Search</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- GET Form navigating to dedicated Order Page -->
-                <form action="{{ route('receipt.search') }}" method="POST" class="d-flex gap-2">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Enter Order number" required>
-                    </div>
-                    <button type="submit" class="btn btn-theme-primary px-4 d-flex align-items-center gap-2">
-                        <span>Search</span>
-                        <i class="fa-solid fa-arrow-right"></i>
+    </div>
+</div>
+
+<!-- PRINT REPORT SELECTION MODAL -->
+<div class="modal fade" id="printReportModal" tabindex="-1" aria-labelledby="printReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background-color: var(--paper); border-radius: 14px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="printReportModalLabel" style="color: var(--espresso); font-family: 'Fraunces', serif;">
+                    <i class="fa-solid fa-file-invoice-dollar me-2" style="color: var(--caramel-deep);"></i>Print Sales Report
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="text-muted small mb-3">Select the specific timeframe period you would like to render and print for financial records:</p>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" onclick="triggerReportPrint('daily')" class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <strong class="d-block" style="color: var(--espresso);">Daily Sales Report</strong>
+                            <small class="text-muted">Breakdown of hourly revenue & transaction velocity today.</small>
+                        </div>
+                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
                     </button>
-                </form>
+
+                    <button type="button" onclick="triggerReportPrint('monthly')" class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <strong class="d-block" style="color: var(--espresso);">Monthly Sales Summary</strong>
+                            <small class="text-muted">Weekly revenue accumulation and category distribution.</small>
+                        </div>
+                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
+                    </button>
+
+                    <button type="button" onclick="triggerReportPrint('yearly')" class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <strong class="d-block" style="color: var(--espresso);">Yearly Financial Overview</strong>
+                            <small class="text-muted">Annual income metrics, cumulative tax, and unit sales.</small>
+                        </div>
+                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- HIDDEN PRINTABLE CONTAINER -->
+<div id="printableArea" class="d-none p-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold m-0" style="color: #000;">CAFELINEA COFFEE SHOP</h2>
+        <p class="m-0 text-uppercase fw-bold" id="printReportTitle">SALES PERFORMANCE REPORT</p>
+        <small>Generated on: {{ date('F d, Y h:i A') }}</small>
+        <hr style="border-top: 2px solid #000;">
+    </div>
+
+    <div class="row my-4">
+        <div class="col-3">
+            <strong>Gross Revenue:</strong><br>
+            <span>₱{{ number_format($grossRevenue, 2) }}</span>
+        </div>
+        <div class="col-3">
+            <strong>Subtotal Collected:</strong><br>
+            <span>₱{{ number_format($subTotalCollected, 2) }}</span>
+        </div>
+        <div class="col-3">
+            <strong>Tax Accrued:</strong><br>
+            <span>₱{{ number_format($taxAccrued, 2) }}</span>
+        </div>
+        <div class="col-3">
+            <strong>Total Items Sold:</strong><br>
+            <span>{{ number_format($totalItemsSold) }} units</span>
+        </div>
+    </div>
+
+    <hr style="border-top: 1px dashed #000;">
+    <h5 class="fw-bold my-3">Sales Summary Data</h5>
+    <div id="printReportTableContainer">
+        <!-- Injected via JavaScript upon print trigger -->
+    </div>
+
+    <div class="mt-5 pt-4 text-center border-top">
+        <small>*** End of Generated Financial Statement - Cafelinea POS System ***</small>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // --- 1. RECEIVE RAW LARAVEL DATA ---
     const rawDaily = @json($daily);
@@ -444,89 +571,22 @@
         }
     });
 
-    // --- 6. INSTANT SEARCH/FILTER RUNNER FOR MOST POPULAR ITEMS ---
-    function filterPopularItemsTable() {
-        const input = document.getElementById('tableFilterInput');
-        const filter = input.value.toLowerCase();
-        const table = document.getElementById('popularItemsTable');
-        const tr = table.getElementsByTagName('tr');
-
-        // Loop through all data rows skipping head row 0
-        for (let i = 1; i < tr.length; i++) {
-            const nameEl = tr[i].querySelector('.target-name');
-            const catEl = tr[i].querySelector('.target-category');
-            
-            if (nameEl || catEl) {
-                const nameText = nameEl ? nameEl.textContent || nameEl.innerText : "";
-                const catText = catEl ? catEl.textContent || catEl.innerText : "";
-                
-                if (nameText.toLowerCase().indexOf(filter) > -1 || catText.toLowerCase().indexOf(filter) > -1) {
-                    tr[i].style.display = "";
-                } else {
-                    tr[i].style.display = "none";
-                }
-            }
-        }
-    }
-
-    // --- 7. FAST CLIENT-SIDE TABLE COLUMN SORTING ---
-    let currentSortCol = null;
-    let isAscending = true;
-
-    function sortPopularTable(colIndex, type) {
-        const table = document.getElementById("popularItemsTable");
-        const tbody = table.querySelector("tbody");
-        const rows = Array.from(tbody.querySelectorAll("tr.item-row"));
-        
-        if (rows.length === 0) return;
-
-        // Reset all sort icons first
-        document.getElementById("sortIcon2").className = "fa-solid fa-sort ms-1 text-muted";
-        document.getElementById("sortIcon3").className = "fa-solid fa-sort ms-1 text-muted";
-
-        // Toggle sort direction if clicking the same column
-        if (currentSortCol === colIndex) {
-            isAscending = !isAscending;
-        } else {
-            currentSortCol = colIndex;
-            isAscending = false; // Default to highest number first (descending)
-        }
-
-        // Apply updated arrow UI
-        const activeIcon = document.getElementById(`sortIcon${colIndex}`);
-        activeIcon.className = isAscending ? "fa-solid fa-sort-up ms-1" : "fa-solid fa-sort-down ms-1";
-        activeIcon.classList.remove("text-muted");
-
-        // Execute Sorting Matrix
-        rows.sort((a, b) => {
-            const cellA = a.cells[colIndex].getAttribute("data-val");
-            const cellB = b.cells[colIndex].getAttribute("data-val");
-            
-            const valA = parseFloat(cellA) || 0;
-            const valB = parseFloat(cellB) || 0;
-
-            return isAscending ? valA - valB : valB - valA;
-        });
-
-        // Re-inject sorted rows into the DOM
-        rows.forEach(row => tbody.appendChild(row));
-    }
-
+    // --- 6. POPULAR ITEMS BACKEND FETCH & SEARCH ---
     let tableState = {
         search: '',
         sort_by: 'units_sold',
         sort_dir: 'desc',
-        apiUrl: "{{ route('admin.popular_items_data') }}"
+        apiUrl: "{{ Route::has('admin.popular_items_data') ? route('admin.popular_items_data') : '#' }}"
     };
 
     let searchDebounceTimeout = null;
 
-    // Trigger initial table population on dashboard load
     document.addEventListener("DOMContentLoaded", function() {
-        fetchPopularItems();
+        if (tableState.apiUrl !== '#') {
+            fetchPopularItems();
+        }
     });
 
-    // Fetch matching datasets from your database storage asynchronously
     function fetchPopularItems() {
         const url = new URL(tableState.apiUrl);
         url.searchParams.append('search', tableState.search);
@@ -536,10 +596,9 @@
         fetch(url)
             .then(response => response.json())
             .then(data => renderTableRows(data))
-            .catch(error => console.error('Error fetching database sorting metrics:', error));
+            .catch(error => console.error('Error fetching database metrics:', error));
     }
 
-    // Render data nodes instantly inside table markup body
     function renderTableRows(items) {
         const tbody = document.getElementById('popularItemsTableBody');
         tbody.innerHTML = '';
@@ -564,34 +623,90 @@
         });
     }
 
-    // Handle interactive sorting click triggers
     function handleBackendSort(column) {
-        // Reset sorting chevron icons
         document.getElementById('sortIcon_units_sold').className = "fa-solid fa-sort ms-1 text-muted";
         document.getElementById('sortIcon_total_income').className = "fa-solid fa-sort ms-1 text-muted";
 
         if (tableState.sort_by === column) {
-            // Toggle direction if clicking current sorted column
             tableState.sort_dir = tableState.sort_dir === 'desc' ? 'asc' : 'desc';
         } else {
             tableState.sort_by = column;
-            tableState.sort_dir = 'desc'; // Default back to highest value first
+            tableState.sort_dir = 'desc';
         }
 
-        // Apply updated chevron indicator icon
         const dynamicIcon = document.getElementById(`sortIcon_${column}`);
         dynamicIcon.className = tableState.sort_dir === 'asc' ? "fa-solid fa-sort-up ms-1" : "fa-solid fa-sort-down ms-1";
 
         fetchPopularItems();
     }
 
-    // Debounce search typing input so it won't bombard the database on every key stroke
     function handleSearchInput() {
         clearTimeout(searchDebounceTimeout);
         searchDebounceTimeout = setTimeout(() => {
             tableState.search = document.getElementById('tableFilterInput').value;
             fetchPopularItems();
-        }, 300); // 300ms wait threshold
+        }, 300);
+    }
+
+    // --- 7. PRINTABLE REPORT GENERATOR FUNCTION ---
+    function triggerReportPrint(type) {
+        let labels = [];
+        let values = [];
+        let title = '';
+
+        if (type === 'daily') {
+            title = 'DAILY SALES REPORT';
+            labels = dailyLabels;
+            values = dailyData;
+        } else if (type === 'monthly') {
+            title = 'MONTHLY SALES REPORT';
+            labels = monthlyLabels;
+            values = monthlyData;
+        } else if (type === 'yearly') {
+            title = 'YEARLY SALES REPORT';
+            labels = yearlyLabels;
+            values = yearlyData;
+        }
+
+        document.getElementById('printReportTitle').innerText = title;
+
+        // Generate print table HTML
+        let tableHTML = `<table class="table table-bordered w-100 align-middle">
+            <thead>
+                <tr class="table-light">
+                    <th>Timeframe Period</th>
+                    <th class="text-end">Revenue Generated</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        labels.forEach((label, idx) => {
+            const amount = values[idx] || 0;
+            const formatted = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+            tableHTML += `<tr>
+                <td>${label}</td>
+                <td class="text-end">${formatted}</td>
+            </tr>`;
+        });
+
+        tableHTML += `</tbody></table>`;
+        document.getElementById('printReportTableContainer').innerHTML = tableHTML;
+
+        // Dismiss Modal
+        const modalEl = document.getElementById('printReportModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        // Reveal print container & trigger printer
+        const printableArea = document.getElementById('printableArea');
+        printableArea.classList.remove('d-none');
+
+        window.print();
+
+        // Re-hide print area after printing
+        setTimeout(() => {
+            printableArea.classList.add('d-none');
+        }, 1000);
     }
 </script>
 

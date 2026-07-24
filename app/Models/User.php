@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Setting;
 
 #[Fillable(['name', 'email', 'password', 'role', 'online_status'])]
 #[Hidden(['password', 'remember_token'])]
@@ -33,11 +34,11 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::creating(function (User $user) {
-            
-            if ($user->email === config('app.admin_email')) {
-                
+            $adminEmail = Setting::where('name', 'email')->firstOrFail();
+
+            if ($user->email === $adminEmail->value) {
                 $user->role = 'admin';
-            }
+            } 
         });
     }
 }
