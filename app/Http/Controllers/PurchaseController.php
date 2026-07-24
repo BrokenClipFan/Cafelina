@@ -13,9 +13,10 @@ class PurchaseController extends Controller
     public function purchase(Request $request, QueueService $queueService) {
         $items = $request['items'];
         $name = $items[0]['orderName'] ?? mt_rand(1000, 99999);
+        $orderId = null;
 
         try {
-            DB::transaction(function () use ($items, &$name, $queueService) {
+            DB::transaction(function () use ($items, &$name, $queueService, &$orderId) {
                 $subtotal = 0;
                 foreach($items as $item) {
                     $subtotal += $item['price'] * $item['quantity'];
@@ -34,6 +35,8 @@ class PurchaseController extends Controller
                     'payment_method' => $payment,
                     'name' => $name
                 ]);
+
+                $orderId = $purchase->id;
 
                 $queueService->addOrder($purchase);
 
@@ -58,7 +61,19 @@ class PurchaseController extends Controller
 
         return response()->json([
             'message' => 'Checkout Success',
+            'orderId' => $orderId,       
             'orderName' => $name,
         ]);
+    }
+
+    public function search(Request $request) {
+
+        $order = Purchase::findOrFail($request->search);
+
+        return view('admin.receipt', compact('order'));
+    }
+
+    public function updateStatus(Request $request) {
+        dd($request);
     }
 }

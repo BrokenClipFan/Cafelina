@@ -878,8 +878,9 @@
             submitCartBtn.textContent = 'Sending…';
 
             try {
-                await api.post('/cart/checkout', { items: cartData });
-
+                const result = await api.post('/cart/checkout', { items: cartData });
+                const orderName = result.orderName;
+                const orderId = result.orderId
                 // Calculate totals for receipt
                 let subtotal = cartData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 let taxDecimal = @json($taxDecimal);
@@ -888,9 +889,9 @@
 
                 // 1. Open receipt popup window
                 const printWindow = window.open('', '_blank', 'width=400,height=600');
-
+                
                 if (printWindow) {
-                    const receiptHtmlContent = generateReceiptHtml(orderName, cartData, grandTotal, taxAmount);
+                    const receiptHtmlContent = generateReceiptHtml(orderName, orderId, cartData, grandTotal, taxAmount);
 
                     // 2. Write custom printable document into the popup
                     printWindow.document.write(`
@@ -1073,7 +1074,7 @@
         loadKitchenOrders();
     </script>
     <script>
-        function generateReceiptHtml(orderName, items, total, taxAmount) {
+        function generateReceiptHtml(orderName, orderId, items, total, taxAmount) {
             const date = new Date().toLocaleString();
             let itemsHtml = '';
 
@@ -1091,9 +1092,10 @@
                     <h3 style="margin:0; font-size: 16px;">CAFELINA</h3>
                     <p style="margin:2px 0;">Order Receipt</p>
                     <p style="margin:2px 0;">${date}</p>
+                    <p style="margin:2px 0;">Order ID: ${orderId}</p>
                 </div>
                 <div class="receipt-divider"></div>
-                <div><strong>Customer / Order:</strong> ${orderName || 'Guest'}</div>
+                <div><strong>Order Name:</strong> ${orderName}</div>
                 <div class="receipt-divider"></div>
                 <table class="receipt-table">
                     <tbody>

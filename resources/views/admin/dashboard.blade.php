@@ -252,58 +252,90 @@
             </div>
 
             <!-- Dynamic Active Employees Roster Widget -->
-        <div class="col-12 col-lg-5">
-            <div class="card analytic-card h-100 p-4 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold m-0">
-                            <i class="fa-solid fa-circle-dot me-2 text-success animate-pulse"></i>Active Employees
-                        </h5>
-                        <span class="badge bg-success-subtle text-success px-2 py-1 rounded fw-semibold" style="font-size: 0.8rem;">
-                            {{ $onlineEmployees->count() }} Online
-                        </span>
-                    </div>
+            <div class="col-12 col-lg-5">
+                <div class="card analytic-card h-100 p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold m-0">
+                                <i class="fa-solid fa-circle-dot me-2 text-success animate-pulse"></i>Active Employees
+                            </h5>
+                            <span class="badge bg-success-subtle text-success px-2 py-1 rounded fw-semibold" style="font-size: 0.8rem;">
+                                {{ $onlineEmployees->count() }} Online
+                            </span>
+                        </div>
 
-                    <!-- Employee List Container -->
-                    <div class="d-flex flex-column gap-3 overflow-y-auto mb-3" style="max-height: 220px;">
-                        @forelse($onlineEmployees as $employee)
-                            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background-color: rgba(234, 217, 183, 0.2); border: 1px solid rgba(234, 217, 183, 0.4);">
-                                <div class="d-flex align-items-center gap-3">
-                                    <!-- Status Indicator Avatar -->
-                                    <div class="position-relative">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" 
-                                            style="width: 40px; height: 40px; background-color: var(--espresso); font-size: 0.9rem;">
-                                            {{ strtoupper(substr($employee->name, 0, 2)) }}
+                        <!-- Employee List Container -->
+                        <div class="d-flex flex-column gap-3 overflow-y-auto mb-3" style="max-height: 220px;">
+                            @forelse($onlineEmployees as $employee)
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background-color: rgba(234, 217, 183, 0.2); border: 1px solid rgba(234, 217, 183, 0.4);">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <!-- Status Indicator Avatar -->
+                                        <div class="position-relative">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" 
+                                                style="width: 40px; height: 40px; background-color: var(--espresso); font-size: 0.9rem;">
+                                                {{ strtoupper(substr($employee->name, 0, 2)) }}
+                                            </div>
+                                            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" title="Online Now"></span>
                                         </div>
-                                        <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" title="Online Now"></span>
+                                        <!-- Meta Data -->
+                                        <div>
+                                            <h6 class="m-0 fw-bold text-capitalize" style="font-size: 0.95rem;">{{ $employee->name }}</h6>
+                                            <small class="text-muted" style="font-size: 0.78rem;">
+                                                <i class="fa-regular fa-clock me-1"></i>Active Shift
+                                            </small>
+                                        </div>
                                     </div>
-                                    <!-- Meta Data -->
-                                    <div>
-                                        <h6 class="m-0 fw-bold text-capitalize" style="font-size: 0.95rem;">{{ $employee->name }}</h6>
-                                        <small class="text-muted" style="font-size: 0.78rem;">
-                                            <i class="fa-regular fa-clock me-1"></i>Active Shift
-                                        </small>
-                                    </div>
+                                    <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
+                                        {{ $employee->role ?? 'Staff' }}
+                                    </span>
                                 </div>
-                                <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
-                                    {{ $employee->role ?? 'Staff' }}
-                                </span>
-                            </div>
-                        @empty
-                            <div class="text-center py-4 text-muted">
-                                <i class="fa-solid fa-user-slash d-block mb-2 fs-4" style="color: var(--ink-soft);"></i>
-                                No employees currently active online.
-                            </div>
-                        @endforelse
+                            @empty
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-user-slash d-block mb-2 fs-4" style="color: var(--ink-soft);"></i>
+                                    No employees currently active online.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- Sticky Footer Action Button -->
+                    <div class="pt-2 border-top" style="border-color: var(--paper-warm) !important;">
+                        <a href="{{ route('admin.employees')}}" class="btn btn-theme-outline w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-users-viewfinder"></i> View All Employees
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Row 3: Receipt Lookup Card -->
+    <div class="row g-4 mt-2">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card analytic-card p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                        style="width: 48px; height: 48px; background-color: var(--caramel-tint); color: var(--caramel-deep);">
+                        <i class="fa-solid fa-receipt fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold m-0">Receipt Order Lookup</h5>
+                        <small style="color: var(--ink-soft);">Find order receipts to inspect items or manage refunds.</small>
                     </div>
                 </div>
 
-                <!-- Sticky Footer Action Button -->
-                <div class="pt-2 border-top" style="border-color: var(--paper-warm) !important;">
-                    <a href="{{ route('admin.employees')}}" class="btn btn-theme-outline w-100 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                        <i class="fa-solid fa-users-viewfinder"></i> View All Employees
-                    </a>
-                </div>
+                <!-- GET Form navigating to dedicated Order Page -->
+                <form action="{{ route('receipt.search') }}" method="POST" class="d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Enter Order number" required>
+                    </div>
+                    <button type="submit" class="btn btn-theme-primary px-4 d-flex align-items-center gap-2">
+                        <span>Search</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>

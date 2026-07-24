@@ -50,6 +50,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/employee/assign', [EmployeeManagementController::class, 'assignShift'])->name('admin.employees.assign_shift');
     Route::delete('/admin/employee/schedule/destroy/{id}', [EmployeeManagementController::class, 'destroySchedule'])->name('admin.employees.destroy_schedule');
     
+    Route::post('/admin/receipt/', [PurchaseController::class, 'search'])->name('receipt.search');
+    Route::post('/admin/receipt/update', [PurchaseController::class, 'updateStatus'])->name('orders.update_status');
 });
 
 require __DIR__.'/auth.php';
