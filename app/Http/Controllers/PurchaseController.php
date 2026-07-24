@@ -7,6 +7,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use Illuminate\Support\Facades\DB;
 use App\Services\QueueService;
+use App\Models\Setting;
 
 class PurchaseController extends Controller
 {
@@ -23,14 +24,15 @@ class PurchaseController extends Controller
                 }
 
                 $userId = auth()->id();
-                $tax = 0.08;
-                $total = $subtotal + ($subtotal * $tax);
+                $taxString = Setting::where('name', 'tax')->first();
+                $taxDecimal = (float) $taxString->value;
+                $total = $subtotal + ($subtotal * $taxDecimal);
                 $payment = "Cash";
 
                 $purchase = Purchase::create([
                     'user_id' => $userId,
                     'subtotal' => $subtotal,
-                    'tax' => $tax,
+                    'tax' => $taxDecimal,
                     'total' => $total,
                     'payment_method' => $payment,
                     'name' => $name

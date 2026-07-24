@@ -10,6 +10,7 @@ use App\Http\Controllers\QueueListController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\EmployeeManagementController;
+use App\Http\Controllers\Admin\SettingController;
 
 Route::get('/orders', function () {
     return view('queue');
@@ -52,6 +53,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     
     Route::post('/admin/receipt/', [PurchaseController::class, 'search'])->name('receipt.search');
     Route::post('/admin/receipt/update', [PurchaseController::class, 'updateStatus'])->name('orders.update_status');
+
+    Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings');
+    Route::post('/admin/setting/update', [SettingController::class, 'update'])->name('settings.update');
 });
 
 require __DIR__.'/auth.php';
