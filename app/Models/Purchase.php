@@ -20,4 +20,8 @@ class Purchase extends Model
     public function items() {
         return $this->hasMany(PurchaseItem::class, 'purchase_id');
     }
+
+    public function user() {
+        return $this->belongsTo(User::class, 'id');
+    }
 }

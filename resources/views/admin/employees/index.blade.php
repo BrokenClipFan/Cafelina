@@ -69,12 +69,29 @@
         border-color: var(--caramel) !important;
         color: var(--caramel-deep) !important;
     }
+
+    /* Custom Scrollbar Styling */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(234, 217, 183, 0.3);
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--caramel);
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--caramel-deep);
+    }
 </style>
 
 <div class="admin-wrapper vh-100 d-flex flex-column p-4 overflow-hidden">
     <div class="container-fluid d-flex flex-column h-100 gap-3">
         
-        <!-- Top Header Navigation (Fixed Height) -->
+        <!-- Top Header Navigation -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 flex-shrink-0">
             <div>
                 <h1 class="fw-bold m-0" style="font-size: 1.75rem;">Employee Staff Roster</h1>
@@ -87,19 +104,18 @@
             </div>
         </div>
 
-        <!-- 1. Team Overview Container (Balanced 50% split) -->
+        <!-- 1. Team Overview Container -->
         <div class="card analytic-card p-3 flex-grow-1 overflow-hidden d-flex flex-column" style="min-height: 0;">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-2 gap-2 flex-shrink-0">
                 <h5 class="fw-bold m-0 fs-6"><i class="fa-solid fa-users me-2" style="color: var(--caramel-deep);"></i>Team Overview</h5>
-                <!-- Dynamic Filter Search Bar -->
+                <!-- Dynamic Filter Search Bar for Employees -->
                 <div class="input-group input-group-sm" style="max-width: 240px;">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="employeeSearchInput" onkeyup="filterEmployeeRoster()" class="form-control border-start-0" placeholder="Search staff profiles...">
                 </div>
             </div>
 
-            <!-- Dynamic inner table scroll height engine -->
-            <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+            <div class="table-responsive flex-grow-1 custom-scrollbar" style="overflow-y: auto;">
                 <table class="table table-custom m-0 align-middle" id="employeeRosterTable" style="font-size: 0.9rem;">
                     <thead style="position: sticky; top: 0; background: #ffffff; z-index: 1;">
                         <tr>
@@ -116,8 +132,8 @@
                             <tr class="employee-data-row">
                                 <td class="fw-semibold text-capitalize target-staff-name">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                                             style="width: 28px; height: 28px; background-color: var(--espresso); font-size: 0.75rem;">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
+                                             style="width: 30px; height: 30px; background-color: var(--espresso); font-size: 0.75rem;">
                                             {{ strtoupper(substr($staff->name, 0, 2)) }}
                                         </div>
                                         <span>{{ $staff->name }}</span>
@@ -131,16 +147,28 @@
                                         <span class="badge bg-secondary-subtle text-muted border-0 px-2 py-1" style="font-size: 0.75rem;">Offline</span>
                                     @endif
                                 </td>
-                                <td class="text-center fw-bold">{{ number_format($staff->total_orders_handled) }}</td>
-                                <td class="text-end fw-bold text-success">₱{{ number_format($staff->total_sales_generated, 2) }}</td>
+                                <td class="text-center fw-bold">{{ number_format($staff->total_orders_handled ?? 0) }}</td>
+                                <td class="text-end fw-bold text-success">₱{{ number_format($staff->total_sales_generated ?? 0, 2) }}</td>
                                 <td class="text-center">
-                                    <form action="{{ route('admin.employees.destroy', $staff->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to remove this employee profile entirely?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size: 0.8rem;" title="Delete employee">
-                                            <i class="fa-solid fa-trash-can"></i> Remove
-                                        </button>
-                                    </form>
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <a href="{{ route('admin.employee', $staff->id) }}">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary px-2 py-1" 
+                                                    style="font-size: 0.78rem;" 
+                                                    title="View Staff Profile">
+                                                <i class="fa-solid fa-eye me-1"></i>View
+                                            </button>
+                                        </a>
+                                        
+
+                                        <form action="{{ route('admin.employees.destroy', $staff->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to remove this employee profile entirely?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" style="font-size: 0.78rem;" title="Delete employee">
+                                                <i class="fa-solid fa-trash-can me-1"></i>Remove
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -153,18 +181,27 @@
             </div>
         </div>
 
-        <!-- 2. Employee Schedules Container (Balanced 50% split) -->
+        <!-- 2. Employee Schedules Container -->
         <div class="card analytic-card p-3 flex-grow-1 overflow-hidden d-flex flex-column" style="min-height: 0;">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-2 gap-2 flex-shrink-0">
                 <h5 class="fw-bold m-0 fs-6"><i class="fa-regular fa-calendar-days me-2" style="color: var(--moss);"></i>Shift Assignments & Schedules</h5>
-                <button class="btn btn-sm btn-theme-outline py-1" data-bs-toggle="modal" data-bs-target="#assignShiftModal" style="font-size: 0.8rem;">
-                    <i class="fa-solid fa-plus me-1"></i> Assign Shift
-                </button>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Schedule Search Input Bar -->
+                    <div class="input-group input-group-sm" style="max-width: 220px;">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="scheduleSearchInput" onkeyup="filterScheduleRoster()" class="form-control border-start-0" placeholder="Search shifts or staff...">
+                    </div>
+
+                    <button class="btn btn-sm btn-theme-outline py-1 text-nowrap" data-bs-toggle="modal" data-bs-target="#assignShiftModal" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-plus me-1"></i> Assign Shift
+                    </button>
+                </div>
             </div>
 
-            <!-- Dynamic inner table scroll height engine -->
-            <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
-                <table class="table table-custom m-0 align-middle" style="font-size: 0.9rem;">
+            <!-- Scrollable Schedule Table Container -->
+            <div class="table-responsive flex-grow-1 custom-scrollbar" style="overflow-y: auto;">
+                <table class="table table-custom m-0 align-middle" id="scheduleRosterTable" style="font-size: 0.9rem;">
                   <thead style="position: sticky; top: 0; background: #ffffff; z-index: 1;">
                       <tr>
                           <th>Employee</th>
@@ -172,22 +209,22 @@
                           <th class="text-center">Shift Hours</th>
                           <th class="text-center">Station / Role</th>
                           <th class="text-center">Status</th>
-                          <th class="text-center">Actions</th> <!-- New Header Column -->
+                          <th class="text-center">Actions</th>
                       </tr>
                   </thead>
                   <tbody>
                       @forelse($schedules as $schedule)
-                          <tr>
-                              <td class="fw-semibold text-capitalize">
+                          <tr class="schedule-data-row">
+                              <td class="fw-semibold text-capitalize target-schedule-name">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
                                           style="width: 28px; height: 28px; background-color: var(--espresso); font-size: 0.75rem;">
-                                        {{ strtoupper(substr($staff->name, 0, 2)) }}
+                                        {{ strtoupper(substr($schedule->user->name ?? 'EP', 0, 2)) }}
                                     </div>
                                     <span> {{ $schedule->user->name ?? 'Unknown Staff' }}</span>
                                 </div>            
                               </td>
-                              <td class="text-muted" style="font-size: 0.85rem;">
+                              <td class="text-muted target-schedule-days" style="font-size: 0.85rem;">
                                   @if(is_array($schedule->days))
                                       {{ implode(', ', $schedule->days) }}
                                   @else
@@ -199,7 +236,7 @@
                                   {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
                               </td>
                               <td class="text-center">
-                                  <span class="badge text-uppercase" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
+                                  <span class="badge text-uppercase target-schedule-role" style="background-color: var(--caramel-tint); color: var(--caramel-deep); font-size: 0.7rem;">
                                       {{ $schedule->station_role }}
                                   </span>
                               </td>
@@ -208,13 +245,12 @@
                                       {{ $schedule->status }}
                                   </span>
                               </td>
-                              <!-- Inline Delete Action Form -->
                               <td class="text-center">
                                   <form action="{{ route('admin.employees.destroy_schedule', $schedule->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this shift allocation?');">
                                       @csrf
                                       @method('DELETE')
-                                      <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-0" style="font-size: 0.8rem;" title="Delete employee">
-                                        <i class="fa-solid fa-trash-can"></i> Remove
+                                      <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" style="font-size: 0.78rem;" title="Delete schedule">
+                                        <i class="fa-solid fa-trash-can me-1"></i>Remove
                                       </button>
                                   </form>
                               </td>
@@ -231,7 +267,60 @@
 
     </div>
 </div>
-<!-- Assign Shift Bootstrap Modal Component -->
+
+<!-- Modal 1: View Employee Details Modal -->
+<div class="modal fade" id="viewEmployeeModal" tabindex="-1" aria-labelledby="viewEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 14px; background-color: #ffffff;">
+            <div class="modal-header border-bottom-0 pt-4 px-4 pb-2">
+                <h5 class="modal-title fw-bold" id="viewEmployeeModalLabel" style="font-family: 'Fraunces', serif; font-size: 1.25rem;">
+                    <i class="fa-solid fa-id-card me-2" style="color: var(--caramel-deep);"></i>Employee Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body px-4 pb-4">
+                <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background-color: rgba(234, 217, 183, 0.25); border: 1px solid var(--paper-warm);">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                         id="viewEmployeeAvatar" style="width: 48px; height: 48px; background-color: var(--espresso); font-size: 1.1rem;">
+                        --
+                    </div>
+                    <div>
+                        <h6 class="m-0 fw-bold fs-5 text-capitalize" id="viewEmployeeName">Employee Name</h6>
+                        <small class="text-muted" id="viewEmployeeEmail">email@example.com</small>
+                    </div>
+                </div>
+
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="p-2 rounded border" style="background-color: var(--paper);">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Status</small>
+                            <span class="fw-bold" id="viewEmployeeStatus" style="font-size: 0.85rem;">-</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 rounded border" style="background-color: var(--paper);">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Orders</small>
+                            <span class="fw-bold" id="viewEmployeeOrders" style="font-size: 0.85rem;">0</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 rounded border" style="background-color: var(--paper);">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Sales</small>
+                            <span class="fw-bold text-success" id="viewEmployeeSales" style="font-size: 0.85rem;">₱0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-4 py-2 fw-bold w-100" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Assign Shift Modal -->
 <div class="modal fade" id="assignShiftModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="assignShiftModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 14px; background-color: #ffffff;">
@@ -247,7 +336,6 @@
                 <div class="modal-body px-4 pb-4">
                     <p class="text-muted small mb-3">Configure working hours, active role context, and days of availability for the selected team member.</p>
                     
-                    <!-- Employee Selection Box -->
                     <div class="mb-3">
                         <label for="user_id" class="form-label small fw-bold text-muted text-uppercase mb-1">Select Employee</label>
                         <select name="user_id" id="user_id" class="form-select" required style="border-color: var(--paper-warm);">
@@ -258,7 +346,6 @@
                         </select>
                     </div>
 
-                    <!-- Shift Time Grid Layout -->
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="start_time" class="form-label small fw-bold text-muted text-uppercase mb-1">Start Time</label>
@@ -270,7 +357,6 @@
                         </div>
                     </div>
 
-                    <!-- Operational Station Role Context -->
                     <div class="mb-3">
                         <label for="station_role" class="form-label small fw-bold text-muted text-uppercase mb-1">Station / Operational Role</label>
                         <select name="station_role" id="station_role" class="form-select" required style="border-color: var(--paper-warm);">
@@ -281,7 +367,6 @@
                         </select>
                     </div>
 
-                    <!-- Days Selection (Comma separated array representation) -->
                     <div class="mb-2">
                         <label class="form-label small fw-bold text-muted text-uppercase mb-1">Assigned Days</label>
                         <div class="d-flex flex-wrap gap-2 pt-1">
@@ -297,7 +382,6 @@
                     </div>
                 </div>
                 
-                <!-- Action Confirmation Buttons -->
                 <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
                     <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-2 fw-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Cancel</button>
                     <button type="submit" class="btn btn-sm text-white px-4 py-2 fw-bold" style="background-color: var(--espresso); border-radius: 8px;">
@@ -311,7 +395,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Pure Javascript Fast Client-Side Search Engine Filter Row Matches
+    // Search Filter Function for Employee Profiles Roster
     function filterEmployeeRoster() {
         const input = document.getElementById('employeeSearchInput');
         const filter = input.value.toLowerCase();
@@ -323,10 +407,38 @@
             const emailEl = tr[i].querySelector('.target-staff-email');
             
             if (nameEl || emailEl) {
-                const nameText = nameEl ? nameEl.textContent || nameEl.innerText : "";
-                const emailText = emailEl ? emailEl.textContent || emailEl.innerText : "";
+                const nameText = nameEl ? (nameEl.textContent || nameEl.innerText) : "";
+                const emailText = emailEl ? (emailEl.textContent || emailEl.innerText) : "";
                 
                 if (nameText.toLowerCase().indexOf(filter) > -1 || emailText.toLowerCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    // Search Filter Function for Shift Assignments & Schedules
+    function filterScheduleRoster() {
+        const input = document.getElementById('scheduleSearchInput');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('scheduleRosterTable');
+        const tr = table.getElementsByClassName('schedule-data-row');
+
+        for (let i = 0; i < tr.length; i++) {
+            const nameEl = tr[i].querySelector('.target-schedule-name');
+            const roleEl = tr[i].querySelector('.target-schedule-role');
+            const daysEl = tr[i].querySelector('.target-schedule-days');
+
+            if (nameEl || roleEl || daysEl) {
+                const nameText = nameEl ? (nameEl.textContent || nameEl.innerText) : "";
+                const roleText = roleEl ? (roleEl.textContent || roleEl.innerText) : "";
+                const daysText = daysEl ? (daysEl.textContent || daysEl.innerText) : "";
+
+                if (nameText.toLowerCase().indexOf(filter) > -1 || 
+                    roleText.toLowerCase().indexOf(filter) > -1 || 
+                    daysText.toLowerCase().indexOf(filter) > -1) {
                     tr[i].style.display = "";
                 } else {
                     tr[i].style.display = "none";

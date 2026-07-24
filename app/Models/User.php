@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Setting;
+use App\Models\Purchase;
+use App\Models\EmployeeSchedule;
 
 #[Fillable(['name', 'email', 'password', 'role', 'online_status'])]
 #[Hidden(['password', 'remember_token'])]
@@ -41,4 +43,13 @@ class User extends Authenticatable
             } 
         });
     }
+
+    public function orders() {
+        return $this->hasMany(Purchase::class, 'user_id');
+    }
+
+    public function schedules() {
+        return $this->hasMany(EmployeeSchedule::class, 'user_id');
+    }
+
 }

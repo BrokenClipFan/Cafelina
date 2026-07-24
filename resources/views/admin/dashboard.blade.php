@@ -379,7 +379,7 @@
                         </div>
 
                         <!-- GET / POST Form Navigating to Details View -->
-                        <form action="{{ Route::has('receipt.search') ? route('receipt.search') : '#' }}" method="POST" class="d-flex gap-2 flex-grow-1" style="max-width: 500px;">
+                        <form action="{{ Route::has('receipt.search') }}" method="POST" class="d-flex gap-2 flex-grow-1" style="max-width: 500px;">
                             @csrf
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0 text-muted">

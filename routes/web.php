@@ -45,6 +45,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard/items/basta', [SaleController::class, 'getPopularItemsData'])->name('admin.popular_items_data');
     
     Route::get('/admin/employees', [EmployeeManagementController::class, 'index'])->name('admin.employees');
+    Route::get('/admin/employees/{employee}', [EmployeeManagementController::class, 'show'])->name('admin.employee');
     Route::post('/admin/employee/toggle/{id}', [EmployeeManagementController::class, 'toggleStatus'])->name('admin.employees.toggle_status');
     Route::delete('/admin/employee/destroy/{id}', [EmployeeManagementController::class, 'destroy'])->name('admin.employees.destroy');
     
