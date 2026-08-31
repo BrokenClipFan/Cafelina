@@ -8,6 +8,7 @@ use App\Models\PurchaseItem;
 use Illuminate\Support\Facades\DB;
 use App\Services\QueueService;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseController extends Controller
 {
@@ -23,11 +24,13 @@ class PurchaseController extends Controller
                     $subtotal += $item['price'] * $item['quantity'];
                 }
 
-                $userId = auth()->id();
+                $userId = Auth::id();
+
                 $taxString = Setting::where('name', 'tax')->first();
                 $taxDecimal = (float) $taxString->value;
                 $total = $subtotal + ($subtotal * $taxDecimal);
                 $payment = "Cash";
+
 
                 $purchase = Purchase::create([
                     'user_id' => $userId,
@@ -71,11 +74,23 @@ class PurchaseController extends Controller
     public function search(Request $request) {
 
         $order = Purchase::findOrFail($request->search);
+        $order->load('user');
 
         return view('admin.receipt', compact('order'));
     }
 
     public function updateStatus(Request $request) {
-        dd($request);
+        $order = Purchase::findOrFail(intval($request->order_id));
+        $order->load('user');
+
+        $order->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status updated successfully.',
+            'status'  => $order->status
+        ]);
     }
 }
