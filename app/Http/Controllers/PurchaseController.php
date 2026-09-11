@@ -93,4 +93,34 @@ class PurchaseController extends Controller
             'status'  => $order->status
         ]);
     }
+
+    public function autocomplete(Request $request) {
+        $query = $request->input('q');
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        // Strip leading zeros if the query is purely numeric so that '00115' matches id '115'
+        $idQuery = ltrim($query, '0');
+        if (empty($idQuery) && is_numeric($query)) {
+            $idQuery = '0'; // Handle if they just type '0' or '000'
+        }
+
+        $results = Purchase::where('id', 'LIKE', "%{$idQuery}%")
+            ->orWhere('name', 'LIKE', "%{$query}%")
+            ->orderByDesc('created_at')
+            ->take(8)
+            ->get(['id', 'name', 'total', 'created_at']);
+
+        $formatted = $results->map(function($order) {
+            return [
+                'id' => $order->id,
+                'padded_id' => str_pad($order->id, 5, '0', STR_PAD_LEFT),
+                'name' => $order->name ?? 'Walk-in',
+                'total' => number_format($order->total, 2)
+            ];
+        });
+
+        return response()->json($formatted);
+    }
 }

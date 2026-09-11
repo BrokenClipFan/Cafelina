@@ -113,7 +113,7 @@ class ItemController extends Controller
             'image_path' => $path
         ]);
 
-        return response()->json(['message' => 'Updated successfully']);
+        return back()->with('success', 'Item updated');
     }
 
     /**
@@ -122,6 +122,6 @@ class ItemController extends Controller
     public function destroy($id)
     {
         Item::destroy($id);
-        return response()->json(['message' => 'Delete successfully']);
+        return back()->with('success', 'Item deleted');
     }
 }

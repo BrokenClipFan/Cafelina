@@ -100,9 +100,9 @@
                     <div class="text-sm-end">
                         <span class="text-uppercase small fw-bold d-block" style="color: var(--ink-soft);">Status</span>
                         <div id="statusBadgeContainer">
-                            @if (($order->status ?? 'completed') === 'refunded')
+                            @if (($order->status ?? 'completed') === 'void')
                                 <span
-                                    class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded fs-6">Refunded</span>
+                                    class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded fs-6">Void</span>
                             @else
                                 <span
                                     class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded fs-6">Completed</span>
@@ -190,24 +190,24 @@
                 </div>
             </div>
 
-            <!-- Action Controls Widget (Refund / Revert Status) -->
+            <!-- Action Controls Widget (Void / Revert Status) -->
             <div
                 class="card analytic-card p-4 d-flex flex-row justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h6 class="fw-bold m-0">Order Actions</h6>
-                    <small class="text-muted">Toggle order completion state or process a full refund.</small>
+                    <small class="text-muted">Toggle order completion state or void an order.</small>
                 </div>
 
                 <div class="d-flex gap-2" id="actionButtonsContainer">
-                    @if (($order->status ?? 'completed') === 'refunded')
+                    @if (($order->status ?? 'completed') === 'void')
                         <button type="button" onclick="updateOrderStatus('completed')"
                             class="btn btn-outline-success fw-semibold">
                             <i class="fa-solid fa-rotate-right me-1"></i> Change Back to Completed
                         </button>
                     @else
-                        <button type="button" onclick="updateOrderStatus('refunded')"
+                        <button type="button" onclick="updateOrderStatus('void')"
                             class="btn btn-outline-danger fw-semibold">
-                            <i class="fa-solid fa-rotate-left me-1"></i> Mark as Refunded
+                            <i class="fa-solid fa-rotate-left me-1"></i> Mark as Void
                         </button>
                     @endif
                 </div>
@@ -232,8 +232,8 @@
         const orderId = "{{ $order->id ?? '' }}";
         if (!orderId) return;
 
-        const confirmText = newStatus === 'refunded' ?
-            'Are you sure you want to mark this order as REFUNDED?' :
+        const confirmText = newStatus === 'void' ?
+            'Are you sure you want to mark this order as VOID?' :
             'Are you sure you want to change this order back to COMPLETED?';
 
         if (!confirm(confirmText)) return;

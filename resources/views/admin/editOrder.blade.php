@@ -328,7 +328,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 180px;
+            height: 220px;
             border-radius: 12px;
             font-weight: 700;
         }
@@ -713,7 +713,9 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="editItemForm" enctype="multipart/form-data">
+                <form id="editItemForm" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
                     <input type="hidden" name="id" id="editItemId">
                     <div class="modal-body p-4">
                         <div class="mb-3">
@@ -754,7 +756,9 @@
                 </div>
                 <div class="modal-body p-4">
                     <p>Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
-                    <form id="deleteItemForm">
+                    <form id="deleteItemForm" method="POST">
+                        @csrf
+                        @method('DELETE')
                         <input type="hidden" name="id" id="deleteItemId">
                     </form>
                 </div>
@@ -776,7 +780,9 @@
                 </div>
                 <div class="modal-body p-4">
                     <p>Are you sure you want to delete <strong id="deleteCategoryName"></strong>? This action cannot be undone.</p>
-                    <form id="deleteCategoryForm">
+                    <form id="deleteCategoryForm" method="POST">
+                        @csrf
+                        @method('DELETE')
                         <input type="hidden" name="id" id="deleteCategoryId">
                     </form>
                 </div>
@@ -913,6 +919,9 @@
             const itemPrice = itemCard.querySelector('.item-price-display').innerText.replace('₱', '').trim();
             const itemImage = itemCard.dataset.image || itemCard.querySelector('.item-image-display')?.src;
 
+            const form = document.getElementById('editItemForm');
+            form.action = `/items/${itemId}/update`; // Set dynamic form action
+
             document.getElementById('editItemId').value = itemId;
             document.getElementById('editItemName').value = itemName.toUpperCase();
             document.getElementById('editItemPrice').value = itemPrice;
@@ -922,55 +931,19 @@
             editModal.show();
         });
 
-        // Save an edited item
-        document.getElementById('editItemForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const itemId = formData.get('id');
-            const categoryItem = document.querySelector(`.categoryItems[data-id="${itemId}"]`);
-
-            try {
-                const response = await api.update(`/items/${itemId}/update`, formData);
-
-                bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
-
-                categoryItem.querySelector('.item-name-display').textContent = formData.get('name');
-                categoryItem.querySelector('.item-price-display').textContent = `₱${parseFloat(formData.get('price')).toFixed(2)}`;
-                
-                if (response.image_path) {
-                    categoryItem.querySelector('.item-image-display').src = response.image_path;
-                    categoryItem.dataset.image = response.image_path;
-                }
-            } catch (error) {
-                console.error('Error updating item:', error);
-            }
-        });
-
         // Trigger the delete-item modal
         document.getElementById('itemSortable').addEventListener('click', function (e) {
             const deleteBtn = e.target.closest('.delete-item-btn');
             if (!deleteBtn) return;
 
             const itemCard = deleteBtn.closest('.categoryItems');
+            const form = document.getElementById('deleteItemForm');
+            form.action = `/items/${itemCard.dataset.id}/delete`;
+
             document.getElementById('deleteItemId').value = itemCard.dataset.id;
             document.getElementById('deleteItemName').innerText = itemCard.querySelector('.item-name-display').innerText;
 
             new bootstrap.Modal(document.getElementById('deleteItemModal')).show();
-        });
-
-        // Confirm item delete
-        document.getElementById('deleteItemForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const itemId = document.getElementById('deleteItemId').value;
-
-            try {
-                await api.delete(`/items/${itemId}/delete`);
-                bootstrap.Modal.getInstance(document.getElementById('deleteItemModal')).hide();
-                document.querySelector(`.categoryItems[data-id="${itemId}"]`).remove();
-            } catch (error) {
-                console.error('Error deleting item:', error);
-            }
         });
 
         // Trigger the delete-category modal
@@ -979,24 +952,13 @@
             if (!deleteBtn) return;
 
             const category = deleteBtn.closest('.category-wrapper');
+            const form = document.getElementById('deleteCategoryForm');
+            form.action = `/category/${category.dataset.id}/delete`;
+
             document.getElementById('deleteCategoryId').value = category.dataset.id;
             document.getElementById('deleteCategoryName').textContent = category.dataset.category;
 
             new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
-        });
-
-        // Confirm category delete
-        document.getElementById('deleteCategoryForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const categoryId = document.getElementById('deleteCategoryId').value;
-
-            try {
-                await api.delete(`/category/${categoryId}/delete`);
-                bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal')).hide();
-                document.querySelector(`.category-wrapper[data-id="${categoryId}"]`).remove();
-            } catch (error) {
-                console.error('Error deleting category:', error);
-            }
         });
     </script>
 

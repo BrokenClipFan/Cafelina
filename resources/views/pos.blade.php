@@ -233,9 +233,10 @@
             padding: 6px 2px 10px;
             margin-bottom: 16px;
             color: var(--ink);
+            text-transform: uppercase;
         }
         .order-name-input:focus { outline: none; border-color: var(--caramel); }
-        .order-name-input::placeholder { color: var(--ink-soft); opacity: 0.6; }
+        .order-name-input::placeholder { color: var(--ink-soft); opacity: 0.6; text-transform: none; }
 
         .cart-list {
             flex: 1;
@@ -895,7 +896,9 @@
 
         async function saveCart() {
             const rows = document.querySelectorAll('.order-item');
-            const orderName = document.querySelector('.orderNameInput').value;
+            let orderName = document.querySelector('.orderNameInput').value;
+            // Ensure all letters are uppercase in the actual backend payload
+            orderName = orderName.toUpperCase();
 
             const cartData = Array.from(rows).map(row => ({
                 name: row.dataset.name,

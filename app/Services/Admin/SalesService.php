@@ -10,228 +10,369 @@ use Carbon\Carbon;
 
 class SalesService 
 {
+    public function applyPeriodFilter($query, $period = null, $date = null)
+    {
+        if (!$period) {
+            return $query; // No filter, return all time
+        }
+
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+
+        switch ($period) {
+            case 'daily':
+                return $query->whereDate('created_at', $targetDate);
+            case 'weekly':
+                return $query->whereBetween('created_at', [
+                    $targetDate->copy()->startOfWeek(),
+                    $targetDate->copy()->endOfWeek()
+                ]);
+            case 'monthly':
+                return $query->whereMonth('created_at', $targetDate->month)
+                             ->whereYear('created_at', $targetDate->year);
+            case 'yearly':
+                return $query->whereYear('created_at', $targetDate->year);
+            default:
+                return $query;
+        }
+    }
+
     /**
      * Get gross revenue across all transactions.
      */
-    public function getGrossRevenue() 
+    public function getGrossRevenue($period = null, $date = null) 
     {
-        return (float) Purchase::sum('total');
+        $query = Purchase::query();
+        $this->applyPeriodFilter($query, $period, $date);
+        return (float) $query->sum("total");
     }
 
     private function getTaxDecimal(): float
     {
-        $taxSetting = Setting::where('name', 'tax')->first();
+        $taxSetting = Setting::where("name", "tax")->first();
         return $taxSetting ? (float) $taxSetting->value : 0.0;
     }
 
     /**
      * Get total subtotal collected before tax/discounts.
      */
-    public function subTotalCollected() 
+    public function subTotalCollected($period = null, $date = null) 
     {
-        return (float) Purchase::sum('subtotal');
+        $query = Purchase::query();
+        $this->applyPeriodFilter($query, $period, $date);
+        return (float) $query->sum("subtotal");
     }
 
     /**
      * Calculate accrued taxes based on a percentage value stored in Setting.
      */
-    public function taxesAccrued() 
+    public function taxesAccrued($period = null, $date = null) 
     {
         $taxDecimal = $this->getTaxDecimal();
-        $rawTax = Purchase::sum('total') * $taxDecimal;
+        
+        $query = Purchase::query();
+        $this->applyPeriodFilter($query, $period, $date);
+        
+        $rawTax = $query->sum("total") * $taxDecimal;
         return round($rawTax, 2);
     }
 
     /**
      * Get the absolute sum count of items sold.
      */
-    public function totalItemsSold() 
+    public function totalItemsSold($period = null, $date = null) 
     {
-        return (int) PurchaseItem::sum('count');
+        $query = PurchaseItem::query();
+        $this->applyPeriodFilter($query, $period, $date);
+        return (int) $query->sum("count");
     }
 
     /**
      * --- DAILY BREAKDOWNS (HOURS) ---
      */
-    public function getDailySalesByHour()
+    public function getDailySalesByHour($date = null)
     {
-        return Purchase::selectRaw('HOUR(created_at) as hour, SUM(total) as sales')
-            ->whereDate('created_at', Carbon::today())
-            ->groupBy('hour')
-            ->orderBy('hour', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::today();
+        return Purchase::selectRaw("HOUR(created_at) as hour, SUM(total) as sales")
+            ->whereDate("created_at", $targetDate)
+            ->groupBy("hour")
+            ->orderBy("hour", "asc")
             ->get()
-            ->pluck('sales', 'hour')
+            ->pluck("sales", "hour")
             ->all();
     }
 
-    public function getDailyTaxByHour()
+    public function getDailyTaxByHour($date = null)
     {
         $taxDecimal = $this->getTaxDecimal();
-        return Purchase::selectRaw('HOUR(created_at) as hour, ROUND(SUM(total) * ?, 2) as tax', [$taxDecimal])
-            ->whereDate('created_at', Carbon::today())
-            ->groupBy('hour')
-            ->orderBy('hour', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::today();
+        return Purchase::selectRaw("HOUR(created_at) as hour, ROUND(SUM(total) * ?, 2) as tax", [$taxDecimal])
+            ->whereDate("created_at", $targetDate)
+            ->groupBy("hour")
+            ->orderBy("hour", "asc")
             ->get()
-            ->pluck('tax', 'hour')
+            ->pluck("tax", "hour")
             ->all();
     }
 
-    public function getDailySubtotalByHour()
+    public function getDailySubtotalByHour($date = null)
     {
-        return Purchase::selectRaw('HOUR(created_at) as hour, SUM(subtotal) as subtotal')
-            ->whereDate('created_at', Carbon::today())
-            ->groupBy('hour')
-            ->orderBy('hour', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::today();
+        return Purchase::selectRaw("HOUR(created_at) as hour, SUM(subtotal) as subtotal")
+            ->whereDate("created_at", $targetDate)
+            ->groupBy("hour")
+            ->orderBy("hour", "asc")
             ->get()
-            ->pluck('subtotal', 'hour')
+            ->pluck("subtotal", "hour")
             ->all();
     }
 
-    public function getDailyItemsSoldByHour()
+    public function getDailyItemsSoldByHour($date = null)
     {
-        return PurchaseItem::selectRaw('HOUR(created_at) as hour, SUM(count) as items')
-            ->whereDate('created_at', Carbon::today())
-            ->groupBy('hour')
-            ->orderBy('hour', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::today();
+        return PurchaseItem::selectRaw("HOUR(created_at) as hour, SUM(count) as items")
+            ->whereDate("created_at", $targetDate)
+            ->groupBy("hour")
+            ->orderBy("hour", "asc")
             ->get()
-            ->pluck('items', 'hour')
+            ->pluck("items", "hour")
+            ->all();
+    }
+    
+    /**
+     * --- WEEKLY BREAKDOWNS (DAYS) ---
+     */
+    public function getWeeklySalesByDay($date = null)
+    {
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        $startOfWeek = $targetDate->copy()->startOfWeek();
+        $endOfWeek = $targetDate->copy()->endOfWeek();
+        
+        return Purchase::selectRaw("DAYOFWEEK(created_at) as day, SUM(total) as sales")
+            ->whereBetween("created_at", [$startOfWeek, $endOfWeek])
+            ->groupBy("day")
+            ->orderBy("day", "asc")
+            ->get()
+            ->pluck("sales", "day")
+            ->all();
+    }
+
+    public function getWeeklySubtotalByDay($date = null)
+    {
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        $startOfWeek = $targetDate->copy()->startOfWeek();
+        $endOfWeek = $targetDate->copy()->endOfWeek();
+
+        return Purchase::selectRaw("DAYOFWEEK(created_at) as day, SUM(subtotal) as subtotal")
+            ->whereBetween("created_at", [$startOfWeek, $endOfWeek])
+            ->groupBy("day")
+            ->orderBy("day", "asc")
+            ->get()
+            ->pluck("subtotal", "day")
+            ->all();
+    }
+
+    public function getWeeklyItemsSoldByDay($date = null)
+    {
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        $startOfWeek = $targetDate->copy()->startOfWeek();
+        $endOfWeek = $targetDate->copy()->endOfWeek();
+
+        return PurchaseItem::selectRaw("DAYOFWEEK(created_at) as day, SUM(count) as items")
+            ->whereBetween("created_at", [$startOfWeek, $endOfWeek])
+            ->groupBy("day")
+            ->orderBy("day", "asc")
+            ->get()
+            ->pluck("items", "day")
+            ->all();
+    }
+
+    public function getWeeklyTaxByDay($date = null)
+    {
+        $taxDecimal = $this->getTaxDecimal();
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        $startOfWeek = $targetDate->copy()->startOfWeek();
+        $endOfWeek = $targetDate->copy()->endOfWeek();
+
+        return Purchase::selectRaw("DAYOFWEEK(created_at) as day, ROUND(SUM(total) * ?, 2) as tax", [$taxDecimal])
+            ->whereBetween("created_at", [$startOfWeek, $endOfWeek])
+            ->groupBy("day")
+            ->orderBy("day", "asc")
+            ->get()
+            ->pluck("tax", "day")
             ->all();
     }
 
     /**
      * --- MONTHLY BREAKDOWNS (WEEKS) ---
      */
-    public function getMonthlySalesByWeek()
+    public function getMonthlySalesByWeek($date = null)
     {
-        return Purchase::selectRaw('WEEK(created_at) as week, SUM(total) as sales')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('week')
-            ->orderBy('week', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("WEEK(created_at) as week, SUM(total) as sales")
+            ->whereMonth("created_at", $targetDate->month)
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("week")
+            ->orderBy("week", "asc")
             ->get()
-            ->pluck('sales', 'week')
+            ->pluck("sales", "week")
             ->all();
     }
 
-    public function getMonthlySubtotalByWeek()
+    public function getMonthlySubtotalByWeek($date = null)
     {
-        return Purchase::selectRaw('WEEK(created_at) as week, SUM(subtotal) as subtotal')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('week')
-            ->orderBy('week', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("WEEK(created_at) as week, SUM(subtotal) as subtotal")
+            ->whereMonth("created_at", $targetDate->month)
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("week")
+            ->orderBy("week", "asc")
             ->get()
-            ->pluck('subtotal', 'week')
+            ->pluck("subtotal", "week")
             ->all();
     }
 
-    public function getMonthlyItemsSoldByWeek()
+    public function getMonthlyItemsSoldByWeek($date = null)
     {
-        return PurchaseItem::selectRaw('WEEK(created_at) as week, SUM(count) as items')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('week')
-            ->orderBy('week', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return PurchaseItem::selectRaw("WEEK(created_at) as week, SUM(count) as items")
+            ->whereMonth("created_at", $targetDate->month)
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("week")
+            ->orderBy("week", "asc")
             ->get()
-            ->pluck('items', 'week')
+            ->pluck("items", "week")
             ->all();
     }
 
-    public function getMonthlyTaxByWeek()
+    public function getMonthlyTaxByWeek($date = null)
     {
         $taxDecimal = $this->getTaxDecimal();
-        return Purchase::selectRaw('WEEK(created_at) as week, ROUND(SUM(total) * ?, 2) as tax', [$taxDecimal])
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('week')
-            ->orderBy('week', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("WEEK(created_at) as week, ROUND(SUM(total) * ?, 2) as tax", [$taxDecimal])
+            ->whereMonth("created_at", $targetDate->month)
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("week")
+            ->orderBy("week", "asc")
             ->get()
-            ->pluck('tax', 'week')
+            ->pluck("tax", "week")
             ->all();
     }
 
     /**
      * --- YEARLY BREAKDOWNS (MONTHS) ---
      */
-    public function getYearlySalesByMonth()
+    public function getYearlySalesByMonth($date = null)
     {
-        return Purchase::selectRaw('MONTH(created_at) as month, SUM(total) as sales')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("MONTH(created_at) as month, SUM(total) as sales")
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("month")
+            ->orderBy("month", "asc")
             ->get()
-            ->pluck('sales', 'month')
+            ->pluck("sales", "month")
             ->all();
     }
 
-    public function getYearlySubtotalByMonth()
+    public function getYearlySubtotalByMonth($date = null)
     {
-        return Purchase::selectRaw('MONTH(created_at) as month, SUM(subtotal) as subtotal')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("MONTH(created_at) as month, SUM(subtotal) as subtotal")
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("month")
+            ->orderBy("month", "asc")
             ->get()
-            ->pluck('subtotal', 'month')
+            ->pluck("subtotal", "month")
             ->all();
     }
 
-    public function getYearlyTaxByMonth()
+    public function getYearlyTaxByMonth($date = null)
     {
         $taxDecimal = $this->getTaxDecimal();
-        return Purchase::selectRaw('MONTH(created_at) as month, ROUND(SUM(total) * ?, 2) as tax', [$taxDecimal])
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return Purchase::selectRaw("MONTH(created_at) as month, ROUND(SUM(total) * ?, 2) as tax", [$taxDecimal])
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("month")
+            ->orderBy("month", "asc")
             ->get()
-            ->pluck('tax', 'month')
+            ->pluck("tax", "month")
             ->all();
     }
 
-    public function getYearlyItemsSoldByMonth()
+    public function getYearlyItemsSoldByMonth($date = null)
     {
-        return PurchaseItem::selectRaw('MONTH(created_at) as month, SUM(count) as items')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
+        $targetDate = $date ? Carbon::parse($date) : Carbon::now();
+        return PurchaseItem::selectRaw("MONTH(created_at) as month, SUM(count) as items")
+            ->whereYear("created_at", $targetDate->year)
+            ->groupBy("month")
+            ->orderBy("month", "asc")
             ->get()
-            ->pluck('items', 'month')
+            ->pluck("items", "month")
             ->all();
     }
 
-    public function getCategoryDistribution()
+    /**
+     * --- OVERALL BREAKDOWNS (YEARS) ---
+     */
+    public function getOverallSalesByYear()
     {
-        return PurchaseItem::selectRaw('category, SUM(count) as total_units')
-            ->groupBy('category')
-            ->orderBy('total_units', 'desc')
+        return Purchase::selectRaw("YEAR(created_at) as year, SUM(total) as sales")
+            ->groupBy("year")
+            ->orderBy("year", "asc")
             ->get()
-            ->pluck('total_units', 'category') // Returns [ 'Beverages' => 55, 'Pastries' => 25 ]
+            ->pluck("sales", "year")
+            ->all();
+    }
+
+    public function getCategoryDistribution($period = null, $date = null)
+    {
+        $query = PurchaseItem::selectRaw("category, SUM(count) as total_units")
+            ->groupBy("category")
+            ->orderBy("total_units", "desc");
+            
+        $this->applyPeriodFilter($query, $period, $date);
+            
+        return $query->get()
+            ->pluck("total_units", "category") // Returns [ "Beverages" => 55, "Pastries" => 25 ]
             ->all();
     }
 
     /**
      * Get top 5 most popular items based on total units sold.
      */
-    public function getTopPopularItems()
+    public function getTopPopularItems($period = null, $date = null)
     {
-        return PurchaseItem::selectRaw('name, category, SUM(count) as units_sold, SUM(count * price) as total_income')
-            ->groupBy('name', 'category')
-            ->orderBy('units_sold', 'desc')
-            ->limit(5)
-            ->get();
+        $query = PurchaseItem::selectRaw("name, category, SUM(count) as units_sold, SUM(count * price) as total_income")
+            ->groupBy("name", "category")
+            ->orderBy("units_sold", "desc")
+            ->limit(5);
+            
+        $this->applyPeriodFilter($query, $period, $date);
+            
+        return $query->get();
     }
 
-    public function getPaymentMethodUsage()
+    public function getPaymentMethodUsage($period = null, $date = null)
     {
-        $totalPurchases = Purchase::count();
+        $baseQuery = Purchase::query();
+        $this->applyPeriodFilter($baseQuery, $period, $date);
+        
+        $totalPurchases = $baseQuery->count();
         if ($totalPurchases === 0) {
-            return ['cash' => 0, 'wallet' => 0, 'card' => 0];
+            return ["cash" => 0, "wallet" => 0, "card" => 0];
         }
 
-        // Adjust string values ('cash', 'wallet', 'card') to exactly match your database entries
+        $cashQuery = Purchase::where("payment_method", "cash");
+        $walletQuery = Purchase::where("payment_method", "wallet");
+        $cardQuery = Purchase::where("payment_method", "card");
+
+        $this->applyPeriodFilter($cashQuery, $period, $date);
+        $this->applyPeriodFilter($walletQuery, $period, $date);
+        $this->applyPeriodFilter($cardQuery, $period, $date);
+
         return [
-            'cash'   => round((Purchase::where('payment_method', 'cash')->count() / $totalPurchases) * 100),
-            'wallet' => round((Purchase::where('payment_method', 'wallet')->count() / $totalPurchases) * 100),
-            'card'   => round((Purchase::where('payment_method', 'card')->count() / $totalPurchases) * 100),
+            "cash"   => round(($cashQuery->count() / $totalPurchases) * 100),
+            "wallet" => round(($walletQuery->count() / $totalPurchases) * 100),
+            "card"   => round(($cardQuery->count() / $totalPurchases) * 100),
         ];
     }
 }

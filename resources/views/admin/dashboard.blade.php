@@ -119,6 +119,14 @@
         color: var(--ink-soft);
         font-weight: 600;
         cursor: pointer;
+        padding: 0.6rem 1.2rem;
+        transition: all 0.2s ease;
+    }
+
+    .time-filter-group .btn:hover:not(.active) {
+        background-color: var(--caramel-tint);
+        border-color: var(--caramel);
+        color: var(--caramel-deep);
     }
 
     .table-custom {
@@ -174,24 +182,31 @@
 
     /* Printable Report Styling */
     @media print {
-        body * {
-            visibility: hidden;
-        }
-
-        #printableArea,
-        #printableArea * {
-            visibility: visible;
-        }
-
-        #printableArea {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-
-        .no-print {
+        /* Hide all UI elements that shouldn't be printed */
+        nav, header, .cf-navbar, .admin-wrapper, .modal, .no-print {
             display: none !important;
+        }
+
+        /* Ensure the printable area takes normal document flow */
+        #printableArea {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        #printableArea * {
+            visibility: visible !important;
+        }
+
+        /* Reset layout containers to prevent forced heights */
+        body, .min-h-screen, main {
+            background-color: white !important;
+            min-height: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
     }
 </style>
@@ -216,14 +231,33 @@
 
             <!-- Navbar Control Actions -->
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Print Report Modal Trigger -->
-                <button type="button" class="btn btn-theme-outline shadow-sm" data-bs-toggle="modal"
-                    data-bs-target="#printReportModal">
-                    <i class="fa-solid fa-print me-2" style="color: var(--caramel-deep);"></i> Print Report
-                </button>
+                <!-- Timeframe Dropdown & Print Group -->
+                <div class="d-flex align-items-center gap-2 me-3">
+                    <div class="dropdown shadow-sm">
+                        <button class="btn dropdown-toggle px-3 py-2 fw-semibold" type="button" id="timeframeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: var(--espresso); color:#fff; border-color:var(--espresso); border-radius: 8px;">
+                            <i class="fa-regular fa-calendar me-2"></i> View: {{ ucfirst($period) }}
+                        </button>
+                        <ul class="dropdown-menu shadow" aria-labelledby="timeframeDropdown" style="border-radius: 8px; border: 1px solid var(--paper-warm);">
+                            <li><button class="dropdown-item py-2 {{ $period === 'daily' ? 'active' : '' }}" type="button" onclick="openDatePickerModal('daily', this)">Daily</button></li>
+                            <li><button class="dropdown-item py-2 {{ $period === 'weekly' ? 'active' : '' }}" type="button" onclick="openDatePickerModal('weekly', this)">Weekly</button></li>
+                            <li><button class="dropdown-item py-2 {{ $period === 'monthly' ? 'active' : '' }}" type="button" onclick="openDatePickerModal('monthly', this)">Monthly</button></li>
+                            <li><button class="dropdown-item py-2 {{ $period === 'yearly' ? 'active' : '' }}" type="button" onclick="openDatePickerModal('yearly', this)">Yearly</button></li>
+                            <li><hr class="dropdown-divider" style="border-color: var(--paper-warm);"></li>
+                            <li><button class="dropdown-item py-2 {{ $period === 'overall' ? 'active' : '' }}" type="button" onclick="window.location.href = '?period=overall'">Overall</button></li>
+                        </ul>
+                    </div>
+
+                    <!-- Print Report Trigger -->
+                    <button type="button" class="btn btn-theme-outline shadow-sm" onclick="triggerReportPrint()">
+                        <i class="fa-solid fa-print me-2" style="color: var(--caramel-deep);"></i> Print Report
+                    </button>
+                </div>
 
                 <a href="{{ url('/') }}" class="btn btn-theme-outline shadow-sm">
                     <i class="fa-solid fa-house me-2"></i> POS
+                </a>
+                <a href="{{ Route::has('queue.display') ? route('queue.display') : '#' }}" class="btn btn-theme-outline shadow-sm">
+                    <i class="fa-solid fa-list-ol me-2"></i> Queue
                 </a>
                 <a href="{{ Route::has('orders.edit_mode') ? route('orders.edit_mode') : '#' }}"
                     class="btn btn-theme-primary shadow-sm">
@@ -285,16 +319,7 @@
                 <div class="card analytic-card h-100 p-4">
                     <div
                         class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-2">
-                        <h5 class="fw-bold m-0" id="trendChartTitle">Periodic Performance Trend (Yearly)</h5>
-                        <div class="btn-group time-filter-group shadow-sm" role="group" id="timeframeButtonGroup">
-                            <button type="button" onclick="changeChartPeriod('daily', this)"
-                                class="btn btn-outline-secondary btn-sm">Daily</button>
-                            <button type="button" onclick="changeChartPeriod('monthly', this)"
-                                class="btn btn-outline-secondary btn-sm">Monthly</button>
-                            <button type="button" onclick="changeChartPeriod('yearly', this)"
-                                class="btn btn-outline-secondary btn-sm active"
-                                style="background-color: var(--espresso); color:#fff; border-color:var(--espresso);">Yearly</button>
-                        </div>
+                        <h5 class="fw-bold m-0" id="trendChartTitle">Periodic Performance Trend ({{ ucfirst($period) }})</h5>
                     </div>
                     <div style="position: relative; height:320px; width:100%">
                         <canvas id="trendChart"></canvas>
@@ -433,40 +458,87 @@
             </div>
         </div>
 
-        <!-- Row 3: Perfectly Aligned Receipt Lookup Card (Full Width Span) -->
+        <!-- Row 3: Receipt Lookup and Recent Orders -->
         <div class="row g-4">
-            <div class="col-12">
-                <div class="card analytic-card p-4">
-                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                style="width: 48px; height: 48px; background-color: var(--caramel-tint); color: var(--caramel-deep);">
-                                <i class="fa-solid fa-receipt fs-4"></i>
-                            </div>
-                            <div>
-                                <h5 class="fw-bold m-0">Receipt Order Lookup</h5>
-                                <small style="color: var(--ink-soft);">Inspect specific customer transactions or
-                                    process full refunds.</small>
-                            </div>
+            <div class="col-12 col-lg-5">
+                <div class="card analytic-card p-4 h-100 d-flex flex-column">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            style="width: 48px; height: 48px; background-color: var(--caramel-tint); color: var(--caramel-deep);">
+                            <i class="fa-solid fa-receipt fs-4"></i>
                         </div>
+                        <div>
+                            <h5 class="fw-bold m-0">Receipt Order Lookup</h5>
+                            <small style="color: var(--ink-soft);">Inspect transactions or process refunds.</small>
+                        </div>
+                    </div>
 
-                        <!-- GET / POST Form Navigating to Details View -->
-                        <form action="{{ route('receipt.search') }}" method="POST" class="d-flex gap-2 flex-grow-1"
-                            style="max-width: 500px;">
-                            @csrf
+                    <!-- GET / POST Form Navigating to Details View -->
+                    <form action="{{ route('receipt.search') }}" method="POST" class="d-flex flex-column gap-2 flex-grow-1">
+                        @csrf
+                        <div class="position-relative">
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0 text-muted">
                                     <i class="fa-solid fa-magnifying-glass"></i>
                                 </span>
-                                <input type="text" name="search" class="form-control border-start-0"
-                                    placeholder="Enter Order # or Receipt ID..." required>
+                                <input type="text" name="search" id="receiptSearchInput" class="form-control border-start-0"
+                                    placeholder="Enter Order # or Receipt ID..." required autocomplete="off">
                             </div>
+                            <!-- Dropdown Suggestions -->
+                            <ul class="list-group position-absolute w-100 shadow-sm d-none" 
+                                id="receiptSuggestions" 
+                                style="top: 100%; left: 0; z-index: 1050; max-height: 200px; overflow-y: auto;">
+                            </ul>
+                        </div>
+                        <div class="mt-auto">
                             <button type="submit"
-                                class="btn btn-theme-primary px-4 d-flex align-items-center gap-2 flex-shrink-0">
-                                <span>Search</span>
+                                class="btn btn-theme-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                                <span>Search Database</span>
                                 <i class="fa-solid fa-arrow-right"></i>
                             </button>
-                        </form>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-7">
+                <div class="card analytic-card p-4 h-100">
+                    <h5 class="fw-bold m-0 mb-3"><i class="fa-solid fa-clock-rotate-left me-2" style="color: var(--stamp);"></i>10 Most Recent Orders</h5>
+                    
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table table-custom m-0">
+                            <thead style="position: sticky; top: 0; z-index: 1; background: white;">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentOrdersTableBody">
+                                @forelse($recentOrders as $order)
+                                    <tr>
+                                        <td class="text-muted" style="font-size: 0.85rem;">{{ $order->created_at->diffForHumans() }}</td>
+                                        <td class="fw-bold">#{{ str_pad($order->id, 5, '0', STR_PAD_LEFT) }}</td>
+                                        <td class="text-capitalize">{{ $order->name ?? 'Walk-in' }}</td>
+                                        <td class="text-end fw-bold">₱{{ number_format($order->total, 2) }}</td>
+                                        <td class="text-center">
+                                            <!-- Post request inside a form masked as a button or just a button -->
+                                            <form action="{{ route('receipt.search') }}" method="POST" class="m-0 p-0">
+                                                @csrf
+                                                <input type="hidden" name="search" value="{{ $order->id }}">
+                                                <button type="submit" class="btn btn-sm btn-theme-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">View</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">No orders found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -475,55 +547,35 @@
     </div>
 </div>
 
-<!-- PRINT REPORT SELECTION MODAL -->
-<div class="modal fade" id="printReportModal" tabindex="-1" aria-labelledby="printReportModalLabel"
+<!-- DATE PICKER MODAL -->
+<div class="modal fade" id="datePickerModal" tabindex="-1" aria-labelledby="datePickerModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="background-color: var(--paper); border-radius: 14px;">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="printReportModalLabel"
+                <h5 class="modal-title fw-bold" id="datePickerModalLabel"
                     style="color: var(--espresso); font-family: 'Fraunces', serif;">
-                    <i class="fa-solid fa-file-invoice-dollar me-2" style="color: var(--caramel-deep);"></i>Print
-                    Sales Report
+                    Select Timeframe
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-4">
-                <p class="text-muted small mb-3">Select the specific timeframe period you would like to render and
-                    print for financial records:</p>
-
-                <div class="d-grid gap-2">
-                    <button type="button" onclick="triggerReportPrint('daily')"
-                        class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
-                        <div>
-                            <strong class="d-block" style="color: var(--espresso);">Daily Sales Report</strong>
-                            <small class="text-muted">Breakdown of hourly revenue & transaction velocity today.</small>
-                        </div>
-                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
-                    </button>
-
-                    <button type="button" onclick="triggerReportPrint('monthly')"
-                        class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
-                        <div>
-                            <strong class="d-block" style="color: var(--espresso);">Monthly Sales Summary</strong>
-                            <small class="text-muted">Weekly revenue accumulation and category distribution.</small>
-                        </div>
-                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
-                    </button>
-
-                    <button type="button" onclick="triggerReportPrint('yearly')"
-                        class="btn btn-theme-outline text-start d-flex justify-content-between align-items-center p-3">
-                        <div>
-                            <strong class="d-block" style="color: var(--espresso);">Yearly Financial Overview</strong>
-                            <small class="text-muted">Annual income metrics, cumulative tax, and unit sales.</small>
-                        </div>
-                        <i class="fa-solid fa-print fs-5" style="color: var(--caramel-deep);"></i>
-                    </button>
+                <p class="text-muted small mb-3">Choose the specific date/timeframe for the chart.</p>
+                <div class="mb-4">
+                    <input type="date" class="form-control shadow-sm" id="chartDateInput" style="border: 1px solid var(--paper-warm);">
+                    <div class="form-text mt-2" style="color: var(--ink-soft); font-size: 0.8rem;">
+                        <i class="fa-solid fa-circle-info me-1"></i>Leave this empty to automatically use the current date (today).
+                    </div>
+                    <input type="hidden" id="chartPeriodType">
                 </div>
+                <button type="button" class="btn btn-theme-primary w-100" onclick="applyChartPeriod()">
+                    View Chart Data
+                </button>
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- HIDDEN PRINTABLE CONTAINER -->
 <div id="printableArea" class="d-none p-5">
@@ -567,36 +619,47 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // --- 1. RECEIVE RAW LARAVEL DATA ---
-    const rawDaily = @json($daily);
-    const rawMonthly = @json($monthly);
-    const rawYearly = @json($yearly);
+    const activePeriod = @json($period);
+    const activeChartData = @json($activeChartData);
+    
     const categoryJson = @json($categoryData);
 
     // --- 2. TIME PERFORMANCE LOGIC CONFIGS ---
-    const dailyLabels = Array.from({
-        length: 24
-    }, (_, i) => `${String(i).padStart(2, '0')}:00`);
-    const dailyData = Array.from({
-        length: 24
-    }, (_, i) => rawDaily.revenue[i] || 0);
+    function get12HourFormat(hour) {
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hr = hour % 12 || 12;
+        return `${hr}${ampm}`;
+    }
 
-    const monthlyLabels = Object.keys(rawMonthly.revenue).map(wk => `Week ${wk}`);
-    const monthlyData = Object.values(rawMonthly.revenue);
+    let currentLabels = [];
+    let currentData = [];
 
-    const yearlyLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const yearlyData = Array.from({
-        length: 12
-    }, (_, i) => rawYearly.revenue[i + 1] || 0);
+    if (activePeriod === 'daily') {
+        currentLabels = Array.from({length: 24}, (_, i) => get12HourFormat(i));
+        currentData = Array.from({length: 24}, (_, i) => activeChartData.revenue[i] || 0);
+    } else if (activePeriod === 'weekly') {
+        currentLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        currentData = Array.from({length: 7}, (_, i) => activeChartData.revenue[i + 1] || 0);
+    } else if (activePeriod === 'monthly') {
+        currentLabels = Object.keys(activeChartData.revenue).map(wk => `Week ${wk}`);
+        currentData = Object.values(activeChartData.revenue);
+    } else if (activePeriod === 'overall') {
+        currentLabels = Object.keys(activeChartData.revenue).map(yr => `${yr}`);
+        currentData = Object.values(activeChartData.revenue);
+    } else {
+        currentLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        currentData = Array.from({length: 12}, (_, i) => activeChartData.revenue[i + 1] || 0);
+    }
 
     // --- 3. RENDER TREND BAR CANVAS CHART ---
     const trendCtx = document.getElementById('trendChart').getContext('2d');
     const trendChart = new Chart(trendCtx, {
         type: 'bar',
         data: {
-            labels: yearlyLabels,
+            labels: currentLabels,
             datasets: [{
                 label: 'Gross Revenue (₱)',
-                data: yearlyData,
+                data: currentData,
                 borderColor: '#A4692A',
                 backgroundColor: 'rgba(198, 134, 59, 0.8)',
                 borderWidth: 2,
@@ -609,11 +672,19 @@
             scales: {
                 y: {
                     beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (₱)'
+                    },
                     grid: {
                         color: 'rgba(64, 41, 27, 0.05)'
                     }
                 },
                 x: {
+                    title: {
+                        display: true,
+                        text: 'Time Period'
+                    },
                     grid: {
                         display: false
                     }
@@ -628,35 +699,48 @@
     });
 
     // --- 4. ENGINE RUNNER FOR TIME PERIOD CHANGING ---
-    function changeChartPeriod(period, buttonElement) {
-        const buttons = document.querySelectorAll('#timeframeButtonGroup .btn');
-        buttons.forEach(btn => {
-            btn.classList.remove('active');
-            btn.style.backgroundColor = 'transparent';
-            btn.style.color = 'var(--ink-soft)';
-            btn.style.borderColor = 'var(--paper-warm)';
-        });
+    function openDatePickerModal(period, buttonElement) {
+        document.getElementById('chartPeriodType').value = period;
 
-        buttonElement.classList.add('active');
-        buttonElement.style.backgroundColor = 'var(--espresso)';
-        buttonElement.style.color = '#fff';
-        buttonElement.style.borderColor = 'var(--espresso)';
-
-        const titleElement = document.getElementById('trendChartTitle');
+        const dateInput = document.getElementById('chartDateInput');
         if (period === 'daily') {
-            trendChart.data.labels = dailyLabels;
-            trendChart.data.datasets[0].data = dailyData;
-            titleElement.innerText = "Periodic Performance Trend (Daily/Hourly)";
+            dateInput.type = 'date';
+        } else if (period === 'weekly') {
+            dateInput.type = 'week';
         } else if (period === 'monthly') {
-            trendChart.data.labels = monthlyLabels;
-            trendChart.data.datasets[0].data = monthlyData;
-            titleElement.innerText = "Periodic Performance Trend (Monthly/Weekly)";
+            dateInput.type = 'month';
         } else if (period === 'yearly') {
-            trendChart.data.labels = yearlyLabels;
-            trendChart.data.datasets[0].data = yearlyData;
-            titleElement.innerText = "Periodic Performance Trend (Yearly/Monthly)";
+            dateInput.type = 'number';
+            dateInput.min = '2000';
+            dateInput.max = '2100';
+            dateInput.placeholder = 'YYYY';
         }
-        trendChart.update();
+        
+        // Show the date picker modal
+        const modal = new bootstrap.Modal(document.getElementById('datePickerModal'));
+        modal.show();
+    }
+
+    function applyChartPeriod() {
+        const period = document.getElementById('chartPeriodType').value;
+        let dateVal = document.getElementById('chartDateInput').value;
+        
+        if (period === 'yearly' && dateVal) {
+            // Laravel expects a parsable date like 2024-01-01 for year parsing
+            dateVal = dateVal + '-01-01';
+        } else if (period === 'monthly' && dateVal) {
+            dateVal = dateVal + '-01';
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('period', period);
+        if (dateVal) {
+            url.searchParams.set('date', dateVal);
+        } else {
+            url.searchParams.delete('date');
+        }
+
+        window.location.href = url.toString();
     }
 
     // --- 5. RENDER DYNAMIC CATEGORY DOUGHNUT MIX CHART ---
@@ -707,15 +791,32 @@
     });
 
     function fetchPopularItems() {
-        const url = new URL(tableState.apiUrl);
+        const baseUrl = tableState.apiUrl === '#' ? window.location.href : tableState.apiUrl;
+        const url = new URL(baseUrl, window.location.origin);
         url.searchParams.append('search', tableState.search);
         url.searchParams.append('sort_by', tableState.sort_by);
         url.searchParams.append('sort_dir', tableState.sort_dir);
+        url.searchParams.append('period', activePeriod);
+        @if($date)
+        url.searchParams.append('date', '{{ $date }}');
+        @endif
 
-        fetch(url)
-            .then(response => response.json())
+        fetch(url.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => renderTableRows(data))
-            .catch(error => console.error('Error fetching database metrics:', error));
+            .catch(error => {
+                console.error('Error fetching database metrics:', error);
+                const tbody = document.getElementById('popularItemsTableBody');
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Failed to load data.</td></tr>`;
+            });
     }
 
     function renderTableRows(items) {
@@ -773,23 +874,10 @@
     }
 
     // --- 7. PRINTABLE REPORT GENERATOR FUNCTION ---
-    function triggerReportPrint(type) {
-        let labels = [];
-        let values = [];
-        let title = '';
-
-        if (type === 'daily') {
-            title = 'DAILY SALES REPORT';
-            labels = dailyLabels;
-            values = dailyData;
-        } else if (type === 'monthly') {
-            title = 'MONTHLY SALES REPORT';
-            labels = monthlyLabels;
-            values = monthlyData;
-        } else if (type === 'yearly') {
-            title = 'YEARLY SALES REPORT';
-            labels = yearlyLabels;
-            values = yearlyData;
+    function triggerReportPrint() {
+        let title = activePeriod.toUpperCase() + ' SALES REPORT';
+        if (activePeriod === 'overall') {
+            title = 'OVERALL LIFETIME SALES REPORT';
         }
 
         document.getElementById('printReportTitle').innerText = title;
@@ -804,8 +892,15 @@
             </thead>
             <tbody>`;
 
-        labels.forEach((label, idx) => {
-            const amount = values[idx] || 0;
+        let totalSum = 0;
+
+        let hasRows = false;
+        currentLabels.forEach((label, idx) => {
+            const amount = parseFloat(currentData[idx]) || 0;
+            if (amount === 0) return; // Skip 0 revenue rows
+
+            hasRows = true;
+            totalSum += amount;
             const formatted = new Intl.NumberFormat('en-PH', {
                 style: 'currency',
                 currency: 'PHP'
@@ -816,13 +911,55 @@
             </tr>`;
         });
 
-        tableHTML += `</tbody></table>`;
-        document.getElementById('printReportTableContainer').innerHTML = tableHTML;
+        if (!hasRows) {
+            tableHTML += `<tr>
+                <td colspan="2" class="text-center text-muted py-3">No revenue generated for this period.</td>
+            </tr>`;
+        }
 
-        // Dismiss Modal
-        const modalEl = document.getElementById('printReportModal');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        if (modalInstance) modalInstance.hide();
+        // Add a total row at the bottom
+        const formattedTotal = new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP'
+        }).format(totalSum);
+
+        tableHTML += `
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td class="text-end">Total Revenue:</td>
+                    <td class="text-end" style="color: var(--caramel-deep);">${formattedTotal}</td>
+                </tr>
+            </tfoot>
+        </tbody></table>`;
+
+        // Add Most Popular Items Table
+        const topItems = @json($topItems);
+        if (topItems && topItems.length > 0) {
+            tableHTML += `
+                <h5 class="fw-bold my-3 mt-4">Top 5 Most Popular Items</h5>
+                <table class="table table-bordered w-100 align-middle">
+                    <thead>
+                        <tr class="table-light">
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th class="text-center">Units Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            topItems.forEach(item => {
+                tableHTML += `
+                    <tr>
+                        <td class="text-capitalize">${item.name}</td>
+                        <td>${item.category}</td>
+                        <td class="text-center fw-bold">${item.units_sold}</td>
+                    </tr>
+                `;
+            });
+            tableHTML += `</tbody></table>`;
+        }
+        
+        document.getElementById('printReportTableContainer').innerHTML = tableHTML;
 
         // Reveal print container & trigger printer
         const printableArea = document.getElementById('printableArea');
@@ -835,6 +972,113 @@
             printableArea.classList.add('d-none');
         }, 1000);
     }
+
+    // --- 8. RECENT ORDERS POLLING ---
+    function fetchRecentOrders() {
+        const url = '{{ route("admin.recent_orders_data") }}';
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Network error');
+            return res.json();
+        })
+        .then(orders => {
+            const tbody = document.getElementById('recentOrdersTableBody');
+            if (!tbody) return;
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No orders found.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            orders.forEach(order => {
+                html += `
+                    <tr>
+                        <td class="text-muted" style="font-size: 0.85rem;">${order.time_diff}</td>
+                        <td class="fw-bold">#${order.padded_id}</td>
+                        <td class="text-capitalize">${order.customer_name}</td>
+                        <td class="text-end fw-bold">₱${order.total_formatted}</td>
+                        <td class="text-center">
+                            <form action="{{ route('receipt.search') }}" method="POST" class="m-0 p-0">
+                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="search" value="${order.id}">
+                                <button type="submit" class="btn btn-sm btn-theme-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">View</button>
+                            </form>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        })
+        .catch(err => console.error('Failed to poll recent orders:', err));
+    }
+
+    // Poll every 5 seconds
+    setInterval(fetchRecentOrders, 5000);
+
+    // --- 9. RECEIPT AUTOCOMPLETE ---
+    const searchInput = document.getElementById('receiptSearchInput');
+    const suggestionsBox = document.getElementById('receiptSuggestions');
+    let autocompleteTimeout;
+
+    if (searchInput && suggestionsBox) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(autocompleteTimeout);
+            const query = this.value.trim();
+
+            if (query.length === 0) {
+                suggestionsBox.classList.add('d-none');
+                return;
+            }
+
+            autocompleteTimeout = setTimeout(() => {
+                fetch(`{{ route('receipt.autocomplete') }}?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        suggestionsBox.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(order => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer';
+                                li.style.cursor = 'pointer';
+                                li.innerHTML = `
+                                    <div>
+                                        <strong class="d-block">#${order.padded_id}</strong>
+                                        <small class="text-muted text-capitalize">${order.name}</small>
+                                    </div>
+                                    <span class="badge bg-light text-dark border">₱${order.total}</span>
+                                `;
+                                li.addEventListener('click', () => {
+                                    searchInput.value = order.id;
+                                    suggestionsBox.classList.add('d-none');
+                                    // Submit the form automatically when they click a suggestion
+                                    searchInput.closest('form').submit();
+                                });
+                                suggestionsBox.appendChild(li);
+                            });
+                            suggestionsBox.classList.remove('d-none');
+                        } else {
+                            suggestionsBox.innerHTML = '<li class="list-group-item text-muted text-center small py-2">No matching orders</li>';
+                            suggestionsBox.classList.remove('d-none');
+                        }
+                    })
+                    .catch(err => console.error(err));
+            }, 300); // Debounce typing
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('d-none');
+            }
+        });
+    }
+
 </script>
 
 {{-- @endsection --}}

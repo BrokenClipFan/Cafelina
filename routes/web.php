@@ -43,6 +43,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/admin/dashboard', [SaleController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin/dashboard/items/basta', [SaleController::class, 'getPopularItemsData'])->name('admin.popular_items_data');
+    Route::get('/admin/dashboard/chart-data', [SaleController::class, 'getChartData'])->name('admin.chart_data');
+    Route::get('/admin/dashboard/recent-orders', [SaleController::class, 'getRecentOrdersData'])->name('admin.recent_orders_data');
     
     Route::get('/admin/employees', [EmployeeManagementController::class, 'index'])->name('admin.employees');
     Route::get('/admin/employees/{employee}', [EmployeeManagementController::class, 'show'])->name('admin.employee');
@@ -53,6 +55,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/admin/employee/schedule/destroy/{id}', [EmployeeManagementController::class, 'destroySchedule'])->name('admin.employees.destroy_schedule');
     
     Route::post('/admin/receipt/', [PurchaseController::class, 'search'])->name('receipt.search');
+    Route::get('/admin/receipt/autocomplete', [PurchaseController::class, 'autocomplete'])->name('receipt.autocomplete');
     Route::post('/admin/receipt/update', [PurchaseController::class, 'updateStatus'])->name('orders.update_status');
 
     Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings');

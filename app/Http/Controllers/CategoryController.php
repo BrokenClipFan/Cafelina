@@ -91,6 +91,6 @@ class CategoryController extends Controller
     {
         Category::destroy($id);
 
-        return response()->json(['message' => 'ok']);
+        return back()->with('success', 'Category deleted');
     }
 }
