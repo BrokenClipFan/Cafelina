@@ -21,6 +21,12 @@ class SaleController extends Controller
         $taxAccrued         = $salesService->taxesAccrued($period, $date);
         $totalItemsSold     = $salesService->totalItemsSold($period, $date);
 
+        $inventoryCost      = $salesService->getInventoryCost($period, $date);
+        // Note: Gross revenue typically includes tax, while subtotal is revenue before tax.
+        // We'll calculate profit as subTotal - inventoryCost to exclude tax from our actual profit,
+        // or just grossRevenue - inventoryCost if they consider gross as their money. Let's use subTotal.
+        $profit             = $subTotalCollected - $inventoryCost;
+
         // New Dynamic Elements
         $categoryData       = $salesService->getCategoryDistribution($period, $date);
         $topItems           = $salesService->getTopPopularItems($period, $date);
@@ -75,6 +81,8 @@ class SaleController extends Controller
             'subTotalCollected',
             'taxAccrued',
             'totalItemsSold',
+            'inventoryCost',
+            'profit',
             'categoryData',
             'topItems',
             'activeChartData',

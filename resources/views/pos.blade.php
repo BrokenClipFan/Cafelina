@@ -560,6 +560,24 @@
 
     </div>
 
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="errorModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i> Checkout Failed</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p id="errorModalMessage" class="mb-0 fs-6 text-dark"></p>
+                </div>
+                <div class="modal-footer bg-light border-0 p-3">
+                    <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="printableReceipt"></div>
     @include('partials.notifications')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -918,6 +936,13 @@
 
             try {
                 const result = await api.post('/cart/checkout', { items: cartData });
+                
+                if (result.status === 'error' || result.error) {
+                    document.getElementById('errorModalMessage').innerHTML = (result.error || result.message || 'Checkout failed.').replace(/\|/g, '<br>');
+                    new bootstrap.Modal(document.getElementById('errorModal')).show();
+                    return;
+                }
+
                 const orderName = result.orderName;
                 const orderId = result.orderId
                 // Calculate totals for receipt
@@ -1040,7 +1065,8 @@
                 } else {
                     console.error('Failed to save cart:', error);
                 }
-                alert('Something went wrong sending the order. Please try again.');
+                document.getElementById('errorModalMessage').innerHTML = 'Something went wrong sending the order. Please try again.';
+                new bootstrap.Modal(document.getElementById('errorModal')).show();
             } finally {
                 submitCartBtn.disabled = false;
                 submitCartBtn.textContent = 'Send to kitchen';

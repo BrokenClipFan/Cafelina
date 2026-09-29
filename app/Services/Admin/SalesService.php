@@ -87,6 +87,16 @@ class SalesService
     }
 
     /**
+     * Get the total cost of inventory restocks.
+     */
+    public function getInventoryCost($period = null, $date = null)
+    {
+        $query = \App\Models\InventoryLog::query();
+        $this->applyPeriodFilter($query, $period, $date);
+        return (float) $query->sum("cost");
+    }
+
+    /**
      * --- DAILY BREAKDOWNS (HOURS) ---
      */
     public function getDailySalesByHour($date = null)

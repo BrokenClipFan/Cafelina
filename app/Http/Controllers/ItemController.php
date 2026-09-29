@@ -44,18 +44,30 @@ class ItemController extends Controller
             'category' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
+            'recipes' => 'nullable|array',
+            'recipes.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'recipes.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         $imagePath = $request->file('image')->store('items', 'public');
 
         $lastPosition = Item::max('position') ?? 0;
-        Item::create([
+        $item = Item::create([
             'name' => strtoupper($validated['name']),
             'category' => ucwords(strtolower($validated['category'])),
             'price' => $validated['price'],
             'image_path' => $imagePath,
             'position' => $lastPosition + 1,
         ]);
+
+        if (!empty($validated['recipes'])) {
+            foreach ($validated['recipes'] as $recipe) {
+                $item->recipes()->create([
+                    'inventory_item_id' => $recipe['inventory_item_id'],
+                    'quantity_used' => $recipe['quantity'],
+                ]);
+            }
+        }
 
         return back()->with('success', 'Item saved');
     }
@@ -100,6 +112,12 @@ class ItemController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'recipes' => 'nullable|array',
+            'recipes.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'recipes.*.quantity' => 'required|numeric|min:0.01',
+        ]);
+
         $item = Item::findOrFail($id);
 
         if($request->hasFile('image'))
@@ -112,6 +130,17 @@ class ItemController extends Controller
             'price' => $request->price,
             'image_path' => $path
         ]);
+
+        // Sync recipes
+        $item->recipes()->delete();
+        if ($request->has('recipes')) {
+            foreach ($request->recipes as $recipe) {
+                $item->recipes()->create([
+                    'inventory_item_id' => $recipe['inventory_item_id'],
+                    'quantity_used' => $recipe['quantity'],
+                ]);
+            }
+        }
 
         return back()->with('success', 'Item updated');
     }

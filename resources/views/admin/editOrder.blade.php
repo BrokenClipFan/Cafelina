@@ -507,6 +507,11 @@
             <a href="{{ route('home') }}" class="exit-link" title="Exit Editor"><i class="bi bi-x-lg"></i> Exit</a>
             <h5 class="editor-title"><i class="bi bi-magic"></i>Live Menu Editor</h5>
         </div>
+        <div>
+            <a href="{{ route('admin.inventory') }}" class="btn btn-outline-secondary btn-sm rounded-pill fw-semibold" target="_blank">
+                <i class="bi bi-box-seam me-1"></i> Manage Inventory
+            </a>
+        </div>
     </div>
 
     <div class="editor-shell">
@@ -694,6 +699,15 @@
                                 <img src="" id="createImagePreview" alt="Image preview">
                             </div>
                         </div>
+                        <hr class="my-4 text-muted">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-box-seam me-2"></i>Recipe / Inventory Linked</h6>
+                        <p class="small text-muted mb-2">Select the raw materials deducted when this item is sold.</p>
+                        <div id="createRecipeContainer">
+                            <!-- Recipe rows will be added here via JS -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addCreateRecipeRowBtn">
+                            <i class="bi bi-plus"></i> Add Raw Material
+                        </button>
                     </div>
                     <div class="modal-footer p-4">
                         <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
@@ -736,6 +750,15 @@
                                 <img src="" id="editImagePreview" alt="Current image">
                             </div>
                         </div>
+                        <hr class="my-4 text-muted">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-box-seam me-2"></i>Recipe / Inventory Linked</h6>
+                        <p class="small text-muted mb-2">Select the raw materials deducted when this item is sold.</p>
+                        <div id="editRecipeContainer">
+                            <!-- Recipe rows will be added here via JS -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addEditRecipeRowBtn">
+                            <i class="bi bi-plus"></i> Add Raw Material
+                        </button>
                     </div>
                     <div class="modal-footer p-4">
                         <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Cancel</button>
@@ -927,6 +950,16 @@
             document.getElementById('editItemPrice').value = itemPrice;
             document.getElementById('editImagePreview').src = itemImage;
 
+            const itemData = allItems.find(i => i.id == itemId);
+            document.getElementById('editRecipeContainer').innerHTML = '';
+            editRecipeIndex = 0;
+            if (itemData && itemData.recipes) {
+                itemData.recipes.forEach(recipe => {
+                    document.getElementById('editRecipeContainer').insertAdjacentHTML('beforeend', createRecipeRow(editRecipeIndex, true, recipe.inventory_item_id, recipe.quantity_used));
+                    editRecipeIndex++;
+                });
+            }
+
             const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
             editModal.show();
         });
@@ -997,6 +1030,75 @@
                     });
                 });
             });
+        });
+    </script>
+    <datalist id="inventoryDatalist">
+        @foreach($inventoryItems as $item)
+            <option value="{{ $item->name }} ({{ $item->unit }})"></option>
+        @endforeach
+    </datalist>
+    <script>
+        const inventoryItems = @json($inventoryItems);
+        const allItems = @json($items);
+
+        function createRecipeRow(index, isEdit = false, selectedId = '', quantity = '') {
+            let selectedItem = inventoryItems.find(i => i.id == selectedId);
+            let selectedName = selectedItem ? `${selectedItem.name} (${selectedItem.unit})` : '';
+            
+            return `
+                <div class="row g-2 mb-2 align-items-center recipe-row">
+                    <div class="col-6">
+                        <input type="text" class="form-control form-control-sm recipe-search-input" list="inventoryDatalist" placeholder="Search Material..." value="${selectedName}" required autocomplete="off">
+                        <input type="hidden" name="recipes[${index}][inventory_item_id]" class="recipe-hidden-id" value="${selectedId}" required>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" name="recipes[${index}][quantity]" class="form-control form-control-sm" placeholder="Qty" step="0.01" min="0" value="${quantity}" required>
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-recipe-btn"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        let createRecipeIndex = 0;
+        document.getElementById('addCreateRecipeRowBtn').addEventListener('click', () => {
+            const container = document.getElementById('createRecipeContainer');
+            container.insertAdjacentHTML('beforeend', createRecipeRow(createRecipeIndex));
+            createRecipeIndex++;
+        });
+
+        let editRecipeIndex = 0;
+        document.getElementById('addEditRecipeRowBtn').addEventListener('click', () => {
+            const container = document.getElementById('editRecipeContainer');
+            container.insertAdjacentHTML('beforeend', createRecipeRow(editRecipeIndex, true));
+            editRecipeIndex++;
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-recipe-btn')) {
+                e.target.closest('.recipe-row').remove();
+            }
+        });
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('recipe-search-input')) {
+                const val = e.target.value;
+                const hiddenInput = e.target.nextElementSibling;
+                const item = inventoryItems.find(i => `${i.name} (${i.unit})` === val);
+                if (item) {
+                    hiddenInput.value = item.id;
+                    e.target.classList.remove('is-invalid');
+                } else {
+                    hiddenInput.value = '';
+                    e.target.classList.add('is-invalid');
+                }
+            }
+        });
+
+        document.getElementById('addItemModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('createRecipeContainer').innerHTML = '';
+            createRecipeIndex = 0;
         });
     </script>
 </body>

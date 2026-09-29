@@ -11,6 +11,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\EmployeeManagementController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\InventoryController;
 
 Route::get('/orders', function () {
     return view('queue');
@@ -60,6 +61,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings');
     Route::post('/admin/setting/update', [SettingController::class, 'update'])->name('settings.update');
+
+    Route::get('/admin/inventory', [InventoryController::class, 'index'])->name('admin.inventory');
+    Route::post('/admin/inventory', [InventoryController::class, 'store'])->name('admin.inventory.store');
+    Route::put('/admin/inventory/{id}', [InventoryController::class, 'update'])->name('admin.inventory.update');
+    Route::delete('/admin/inventory/{id}', [InventoryController::class, 'destroy'])->name('admin.inventory.destroy');
+    Route::post('/admin/inventory/{id}/restock', [InventoryController::class, 'restock'])->name('admin.inventory.restock');
+    Route::get('/admin/inventory/{id}/history', [InventoryController::class, 'history'])->name('admin.inventory.history');
 });
 
 require __DIR__.'/auth.php';

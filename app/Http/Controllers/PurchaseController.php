@@ -20,8 +20,40 @@ class PurchaseController extends Controller
         try {
             DB::transaction(function () use ($items, &$name, $queueService, &$orderId) {
                 $subtotal = 0;
+                
+                // Pre-check inventory stock
+                $inventoryNeeded = [];
                 foreach($items as $item) {
                     $subtotal += $item['price'] * $item['quantity'];
+                    
+                    $posItem = \App\Models\Item::with('recipes.inventoryItem')->where('name', $item['name'])->first();
+                    if ($posItem && $posItem->recipes) {
+                        foreach ($posItem->recipes as $recipe) {
+                            $totalToDeduct = $recipe->quantity_used * $item['quantity'];
+                            $invId = $recipe->inventory_item_id;
+                            if (!isset($inventoryNeeded[$invId])) {
+                                $inventoryNeeded[$invId] = [
+                                    'needed' => 0,
+                                    'name' => $recipe->inventoryItem->name,
+                                    'current' => $recipe->inventoryItem->current_stock,
+                                    'unit' => $recipe->inventoryItem->unit
+                                ];
+                            }
+                            $inventoryNeeded[$invId]['needed'] += $totalToDeduct;
+                        }
+                    }
+                }
+
+                // Verify if there's enough stock
+                $shortages = [];
+                foreach ($inventoryNeeded as $invData) {
+                    if ($invData['current'] < $invData['needed']) {
+                        $shortages[] = "{$invData['name']} (Needed: {$invData['needed']} {$invData['unit']}, Available: {$invData['current']} {$invData['unit']})";
+                    }
+                }
+
+                if (!empty($shortages)) {
+                    throw new \Exception("Insufficient stock for: " . implode(' | ', $shortages));
                 }
 
                 $userId = Auth::id();
@@ -53,6 +85,16 @@ class PurchaseController extends Controller
                         'price' => $item['price'],
                         'count' => $item['quantity']
                     ]);
+
+                    // Deduct from inventory based on recipe
+                    $posItem = \App\Models\Item::with('recipes')->where('name', $item['name'])->first();
+                    if ($posItem && $posItem->recipes) {
+                        foreach ($posItem->recipes as $recipe) {
+                            $totalToDeduct = $recipe->quantity_used * $item['quantity'];
+                            \App\Models\InventoryItem::where('id', $recipe->inventory_item_id)
+                                ->decrement('current_stock', $totalToDeduct);
+                        }
+                    }
                 }
             });
         } catch (\Exception $e) {

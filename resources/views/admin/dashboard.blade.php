@@ -267,6 +267,10 @@
                     class="btn btn-theme-primary shadow-sm">
                     <i class="fa-solid fa-gear me-2"></i> Settings
                 </a>
+                <a href="{{ Route::has('admin.inventory') ? route('admin.inventory') : '#' }}"
+                    class="btn btn-theme-outline shadow-sm">
+                    <i class="fa-solid fa-boxes-stacked me-2"></i> Inventory
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="m-0">
                     @csrf
                     <button type="submit" class="btn btn-theme-danger text-white shadow-sm fw-semibold">
@@ -278,7 +282,7 @@
 
         <!-- KPI Cards Summary Widget Row -->
         <div class="row g-4 mb-4">
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Gross Revenue</h6>
@@ -286,7 +290,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Subtotal Collected</h6>
@@ -294,7 +298,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Taxes Accrued</h6>
@@ -302,12 +306,27 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card analytic-card h-100 p-3">
+                    <div class="card-body">
+                        <h6 class="card-title-custom">Inventory Cost (Restock)</h6>
+                        <span class="card-value text-danger">₱{{ number_format($inventoryCost, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card analytic-card h-100 p-3">
+                    <div class="card-body">
+                        <h6 class="card-title-custom">Net Profit (Subtotal - Cost)</h6>
+                        <span class="card-value text-success">₱{{ number_format($profit, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card analytic-card h-100 p-3">
                     <div class="card-body">
                         <h6 class="card-title-custom">Total Items Sold</h6>
-                        <span class="card-value">{{ number_format($totalItemsSold) }} <small class="fs-6 fw-normal"
-                                style="color: var(--ink-soft);">units</small></span>
+                        <span class="card-value">{{ number_format($totalItemsSold) }} <small class="fs-6 fw-normal" style="color: var(--ink-soft);">units</small></span>
                     </div>
                 </div>
             </div>
