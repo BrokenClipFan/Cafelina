@@ -55,9 +55,10 @@
             width: 100%;
         }
 
-        /* Left side: brand image */
+        /* Left side: branding/photo */
         .coffee-image-side {
-            background-image: linear-gradient(rgba(64, 41, 27, 0.35), rgba(64, 41, 27, 0.85)), url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=800');
+            background: linear-gradient(135deg, rgba(64, 41, 27, 0.8), rgba(64, 41, 27, 0.95)), 
+                        url('{{ asset('Login Photo') }}');
             background-size: cover;
             background-position: center;
             display: flex;

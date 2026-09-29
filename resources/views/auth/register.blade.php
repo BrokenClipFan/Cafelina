@@ -40,7 +40,7 @@
 
         /* Left Side Coffee Image Sidebar */
         .coffee-image-side {
-            background-image: linear-gradient(rgba(96, 63, 38, 0.2), rgba(96, 63, 38, 0.75)), url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=800');
+            background-image: linear-gradient(rgba(96, 63, 38, 0.2), rgba(96, 63, 38, 0.75)), url('{{ asset('Login Photo') }}');
             background-size: cover;
             background-position: center;
             display: flex;
