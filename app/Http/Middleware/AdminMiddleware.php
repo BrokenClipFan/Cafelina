@@ -15,8 +15,15 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if($request->user()->role != 'admin') {
-            abort(403);
+        $user = $request->user();
+
+        if (! $user || ! $user->isAdmin()) {
+            if (! $user || $request->expectsJson()) {
+                abort(403);
+            }
+
+            return redirect()->route($user->homeRoute())
+                ->with('error', 'You do not have permission to access that page.');
         }
 
         return $next($request);

@@ -19,7 +19,7 @@ class EmployeeManagementController extends Controller
     public function index()
     {
         // Pulls all employees, calculating total sales count and total revenue earned per individual
-        $employees = User::where('role', 'employee')
+        $employees = User::whereIn('role', ['cashier', 'stock_clerk'])
             ->leftJoin('purchases', 'users.id', '=', 'purchases.user_id')
             ->selectRaw('
                 users.id, 
@@ -135,7 +135,7 @@ class EmployeeManagementController extends Controller
      */
     public function toggleStatus($id): RedirectResponse
     {
-        $employee = User::where('role', 'employee')->findOrFail($id);
+        $employee = User::whereIn('role', ['cashier', 'stock_clerk'])->findOrFail($id);
         
         if($employee->online_status) {
             $employee = User::findOrFail($id);
@@ -157,7 +157,7 @@ class EmployeeManagementController extends Controller
      */
     public function destroy($id): RedirectResponse
     {
-        $employee = User::where('role', 'employee')->findOrFail($id);
+        $employee = User::whereIn('role', ['cashier', 'stock_clerk'])->findOrFail($id);
         $employee->delete();
 
         return redirect()->route('admin.employees')->with('success', 'Employee profile removed permanently.');

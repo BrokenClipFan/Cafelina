@@ -101,7 +101,15 @@
                 </div>
             </div>
             <div>
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-theme-outline"><i class="fa-solid fa-arrow-left me-2"></i> Dashboard</a>
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-theme-outline"><i class="fa-solid fa-arrow-left me-2"></i> Dashboard</a>
+                @else
+                    <span class="me-2 small" style="color: var(--ink-soft);"><i class="fa-solid fa-user me-1"></i>{{ auth()->user()->name }} ({{ auth()->user()->role_label }})</span>
+                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-theme-outline"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</button>
+                    </form>
+                @endif
                 <button class="btn btn-theme ms-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
                     <i class="fa-solid fa-plus me-2"></i> Add Item
                 </button>

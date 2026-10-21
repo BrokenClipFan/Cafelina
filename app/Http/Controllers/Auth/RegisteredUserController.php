@@ -41,12 +41,17 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'online_status' => true,
+            // Admin assigns the real role on approval.
+            'role' => User::ROLE_CASHIER,
+            'status' => User::STATUS_PENDING,
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('home'));
+        // Pending users go to the "waiting for approval" page;
+        // the configured admin email is auto-approved by the User model.
+        return redirect()->route($user->homeRoute());
     }
 }

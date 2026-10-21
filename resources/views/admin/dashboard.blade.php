@@ -271,6 +271,15 @@
                     class="btn btn-theme-outline shadow-sm">
                     <i class="fa-solid fa-boxes-stacked me-2"></i> Inventory
                 </a>
+                @php $pendingUserCount = \App\Models\User::where('status', 'pending')->count(); @endphp
+                <a href="{{ route('admin.users') }}" class="btn btn-theme-outline shadow-sm position-relative">
+                    <i class="fa-solid fa-user-shield me-2"></i> Users
+                    @if($pendingUserCount > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ $pendingUserCount }}
+                        </span>
+                    @endif
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="m-0">
                     @csrf
                     <button type="submit" class="btn btn-theme-danger text-white shadow-sm fw-semibold">

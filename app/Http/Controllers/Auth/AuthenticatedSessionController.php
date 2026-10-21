@@ -32,11 +32,7 @@ class AuthenticatedSessionController extends Controller
             'online_status' => true
         ]);
 
-        if($request->user()->role == 'admin') {
-            return redirect()->route('admin.dashboard');
-        }
-
-        return redirect()->route('home');
+        return redirect()->route($request->user()->homeRoute());
     }
 
     /**
